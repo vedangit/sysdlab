@@ -1,0 +1,42 @@
+import { DoubleTerminal } from "@/components/lab/DoubleTerminal";
+
+# Isolation Levels: The 'I' in ACID
+
+In a distributed or highly concurrent system, multiple transactions will attempt to read and write the exact same rows simultaneously. Isolation levels define the rules of engagement for these conflicts.
+
+
+
+## The Non-Repeatable Read
+
+A non-repeatable read occurs when a transaction reads the same row twice, but gets different data each time because another transaction modified that row and committed in the middle of your reads.
+
+By default, Postgres runs in `READ COMMITTED` isolation, which prevents "Dirty Reads" but allows "Non-Repeatable Reads".
+
+### The Sandbox
+Let's prove this. Use the terminals below to simulate two concurrent users hitting your database. Both terminals are connected to the same WASM Postgres instance.
+
+**Step 1:** In Terminal A, create a dummy table and insert a row.
+\`\`\`sql
+CREATE TABLE accounts (id INT, balance INT);
+INSERT INTO accounts VALUES (1, 1000);
+\`\`\`
+
+**Step 2:** Start a transaction in Terminal A and check the balance.
+\`\`\`sql
+BEGIN;
+SELECT balance FROM accounts WHERE id = 1;
+\`\`\`
+
+**Step 3:** In Terminal B, update that exact account and commit.
+\`\`\`sql
+UPDATE accounts SET balance = 500 WHERE id = 1;
+\`\`\`
+
+**Step 4:** Back in Terminal A, run the `SELECT` query again.
+\`\`\`sql
+SELECT balance FROM accounts WHERE id = 1;
+\`\`\`
+
+<DoubleTerminal title="Lab 01: Concurrency Conflict" />
+
+Notice the result. Even though Terminal A is inside a single, continuous transaction, the data shifted underneath it. This is why understanding your isolation level is critical for data integrity.
