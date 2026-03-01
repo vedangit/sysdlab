@@ -1,4 +1,9 @@
 # System Design Notes & Labs
+
+i dont have compute bro. <br> <br>
+
+---
+
 [IN PROGRESS] <br>
 This repository contains a living collection of system design notes, architecture tutorials, and deep dives into infrastructure internals.
 
