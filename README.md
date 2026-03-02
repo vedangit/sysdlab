@@ -1,6 +1,13 @@
 # System Design Notes & Labs
-[IN PROGRESS]
+
+i dont have compute bro. <br> <br>
+
+---
+
+[IN PROGRESS] <br>
 This repository contains a living collection of system design notes, architecture tutorials, and deep dives into infrastructure internals.
+
+### these notes feature a built-in, client-side execution engine. Instead of relying solely on static diagrams, the reading material embeds live, interactive terminal environments
 
 The core philosophy of this project is straightforward: reading about distributed systems and databases is insufficient. You need to see them break.
 
