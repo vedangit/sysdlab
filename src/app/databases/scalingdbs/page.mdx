@@ -1,0 +1,213 @@
+
+import { DoubleTerminal } from "@/components/lab/DoubleTerminal";
+import { ApiRouterSandbox } from "@/components/lab/ApiRouterSandbox";
+
+# Scaling Databases: Breaking the Single Node
+
+Every successful system eventually outgrows its original database. When CPU utilization hits 100%, memory swaps to disk, and queries start timing out, you have to scale. 
+
+Scaling a database is fundamentally harder than scaling stateless web servers. You cannot simply spin up ten new database instances behind a load balancer—if you do, their state will instantly drift, and your data integrity will collapse. 
+
+Here is the mechanical progression of how engineers scale data layers, from the easiest optimizations to the most complex distributed systems.
+
+---
+
+## 1. Vertical Scaling (Scaling Up)
+
+The fastest, safest, and most cost-effective way to scale a database is to simply buy a bigger machine. 
+
+If your database is struggling, upgrade from 16GB of RAM to 128GB. Upgrade from standard SSDs to high-provisioned IOPS NVMe drives. 
+* **The Advantage:** Zero code changes. No distributed system complexity. 
+* **The Ceiling:** Hardware has physical limits. You will eventually hit the largest instance size AWS or GCP offers. Furthermore, vertical scaling usually requires downtime to reboot the server into the new hardware profile.
+
+---
+
+## 2. Read Replicas (Leader-Follower)
+
+Most consumer applications are highly asymmetric: they experience 10 to 100 times more reads than writes. 
+
+When a single node cannot handle the read volume, we introduce **Read Replicas**. 
+
+
+1. **The Primary (Leader):** Handles 100% of the `INSERT`, `UPDATE`, and `DELETE` queries.
+2. **The Replicas (Followers):** Read-only copies of the database. 
+3. **The Pipeline:** The Primary streams its Write-Ahead Log (WAL) to the Replicas, which replay the logs to update their own state.
+
+**The Engineering Trade-off: Replication Lag**
+Because data takes time to travel over the network, Replicas are *eventually consistent*. If a user updates their profile picture (written to the Primary) and immediately refreshes the page (read from a Replica), they might see their old picture for a few milliseconds. 
+
+---
+
+## 3. Partitioning (Local Scaling)
+
+Before you split your data across different physical servers over a network, you should split it across different physical files on the same server. This is called **Partitioning**.
+
+Instead of scanning a monolithic `events` table with 5 billion rows, the engine routes the query to a smaller, dedicated physical table (like `events_january`). This drastically reduces memory overhead and disk I/O.
+
+### The Sandbox: Declarative Partitioning
+Let's build a partitioned architecture in Postgres. We will create a logical "Master" table, but force the engine to physically store the data in separate quarterly tables based on the date.
+
+**Step 1:** In Terminal A, create the master table and define the partition key (Range Partitioning).
+```sql
+CREATE TABLE events (
+    id INT,
+    event_date DATE,
+    payload VARCHAR(100)
+) PARTITION BY RANGE (event_date);
+
+```
+
+**Step 2:** Create the physical child partitions for Q1 and Q2.
+
+```sql
+CREATE TABLE events_q1 PARTITION OF events 
+    FOR VALUES FROM ('2024-01-01') TO ('2024-04-01');
+
+CREATE TABLE events_q2 PARTITION OF events 
+    FOR VALUES FROM ('2024-04-01') TO ('2024-07-01');
+
+```
+
+**Step 3:** Insert data into the *master* table. The engine will seamlessly route it to the correct underlying physical disk file.
+
+```sql
+INSERT INTO events VALUES (1, '2024-02-15', 'User signup');
+INSERT INTO events VALUES (2, '2024-05-10', 'Item purchased');
+
+```
+
+**Step 4:** In Terminal B, query the underlying physical partitions directly to prove the data was routed and isolated.
+
+```sql
+-- Query the master table (shows all data)
+SELECT * FROM events;
+
+-- Query the Q1 physical table (shows only Q1 data)
+SELECT * FROM events_q1;
+
+```
+
+<DoubleTerminal title="Lab: Data Routing & Partitioning" />
+
+When you run an `UPDATE` or `DELETE` on the master table, Postgres only scans the specific child table that matches the condition. You've just massively decreased your query execution time.
+
+---
+
+## 4. Sharding (Horizontal Scaling)
+
+When the data volume exceeds the storage capacity of the largest possible single hard drive, or the write volume exceeds what one CPU can process, you must **Shard**.
+
+Sharding is partitioning across a network. You split your database into completely independent servers (Shards).
+
+* Shard 1 holds Users A-M.
+* Shard 2 holds Users N-Z.
+
+**The Routing Layer:**
+Your application code (or an infrastructure proxy) must inspect every incoming query, look at the **Shard Key** (e.g., `user_id`), hash it, and forward the connection to the correct physical database server.
+
+**The Engineering Nightmare:**
+Sharding should be your absolute last resort.
+
+1. **Cross-Shard Joins:** You can no longer run a `JOIN` between a row on Shard 1 and a row on Shard 2. You have to pull the data into the application layer and join it in RAM.
+2. **Rebalancing:** If Shard 1 runs out of disk space, you have to carefully migrate millions of rows to Shard 3 over a live network without dropping writes.
+
+If you are sharding, you are no longer just managing a database; you are building a custom distributed storage engine.
+
+
+
+### Lab: Building a Replication Router
+
+Write a Node.js-style API service that inspects the incoming request type. If it's a `WRITE`, route it to `nodes.master`. If it's a `READ`, route it to `nodes.replica`. 
+<ApiRouterSandbox 
+  title="API Service: Leader-Follower Routing"
+  defaultCode={`async function routeRequest(type, query) {
+  // Task: Route 'WRITE' to nodes.master
+  // Task: Route 'READ' to nodes.replica
+  
+  if (type === 'WRITE') {
+    await nodes.master.query(query);
+    log("=> Routed to Master (Write Success)");
+  } else {
+    await nodes.replica.query(query);
+    log("=> Routed to Replica (Read Success)");
+  }
+}`}
+  testScript={`
+    // 1. Wipe previous test runs
+    await nodes.master.query("DELETE FROM users;");
+    
+    if (typeof routeRequest !== 'function') {
+      log("> ❌ Fatal: routeRequest function is missing.");
+      return;
+    }
+
+    log("Request 1: [WRITE] INSERT INTO users VALUES (1, 'Alice')");
+    await routeRequest('WRITE', "INSERT INTO users VALUES (1, 'Alice')");
+    
+    // 2. Validate the database state!
+    const masterCheck = await nodes.master.query("SELECT * FROM users");
+    if (masterCheck.rows.length === 0) {
+      log("> ❌ Test Failed: The Master database did not receive the WRITE.");
+      return;
+    }
+    
+    log("Request 2: [READ] SELECT * FROM users");
+    await routeRequest('READ', "SELECT * FROM users");
+    
+    log("> ✅ True Validation Passed: Infrastructure stable.");
+  `}
+/>
+
+<ApiRouterSandbox 
+  title="API Service: Application-Level Sharding"
+  defaultCode={`async function routeToShard(key, payload) {
+  // Task: Route A-M to nodes.shard_a
+  // Task: Route N-Z to nodes.shard_b
+  
+  const firstLetter = key.charAt(0).toLowerCase();
+  
+  if (firstLetter >= 'a' && firstLetter <= 'm') {
+    await nodes.shard_a.query("INSERT INTO kv_store VALUES ($1, $2)", [key, payload]);
+    log("=> Routed payload to Shard A (A-M)");
+  } else {
+    await nodes.shard_b.query("INSERT INTO kv_store VALUES ($1, $2)", [key, payload]);
+    log("=> Routed payload to Shard B (N-Z)");
+  }
+}`}
+  testScript={`
+    // 1. Wipe previous test runs
+    await nodes.shard_a.query("DELETE FROM kv_store;");
+    await nodes.shard_b.query("DELETE FROM kv_store;");
+    
+    if (typeof routeToShard !== 'function') {
+      log("> ❌ Fatal: routeToShard function is missing.");
+      return;
+    }
+
+    log("Incoming Payload: { key: 'apple', data: '123' }");
+    await routeToShard('apple', '123');
+    
+    log("Incoming Payload: { key: 'zebra', data: '456' }");
+    await routeToShard('zebra', '456');
+    
+    // 2. Validate the isolated physical shards!
+    const shardA = await nodes.shard_a.query("SELECT * FROM kv_store");
+    const shardB = await nodes.shard_b.query("SELECT * FROM kv_store");
+    
+    let passed = true;
+    
+    if (shardA.rows.length !== 1 || shardA.rows[0].key !== 'apple') {
+      log("> ❌ Shard A Failed: Did not receive the 'apple' payload.");
+      passed = false;
+    }
+    
+    if (shardB.rows.length !== 1 || shardB.rows[0].key !== 'zebra') {
+      log("> ❌ Shard B Failed: Did not receive the 'zebra' payload.");
+      passed = false;
+    }
+
+    if (passed) {
+      log("> ✅ True Validation Passed: Shards correctly balanced.");
+    }
+  `}
+/>

@@ -1,0 +1,113 @@
+
+import { DoubleTerminal } from "@/components/lab/DoubleTerminal";
+
+# Relational Databases: The ACID Contract
+
+A database is not just a structured file. It is a robust state machine designed to survive chaos. In a production environment, servers lose power, networks drop packets, and thousands of threads attempt to mutate the exact same byte of memory simultaneously.
+
+The **ACID** properties (Atomicity, Consistency, Isolation, Durability) are not just theoretical concepts. They are the strict mechanical contract a relational database like PostgreSQL makes with your application: *If you give me the data, I will not corrupt it, and I will not lose it.*
+
+---
+
+## 1. Atomicity: The Transaction Boundary
+
+In distributed systems, partial failures are the default. If an API is transferring funds, it must deduct from Account A and add to Account B. If the server crashes exactly between those two operations, money vanishes.
+
+**Atomicity** guarantees that a transaction is treated as a single, indivisible unit of work. It is an "all-or-nothing" execution model. If a single command fails, the entire block is aborted, and the database state rolls back as if nothing ever happened.
+
+### The Sandbox: Simulating a System Crash
+Let's watch the engine protect state during a partial failure. 
+
+**Step 1:** In Terminal A, create the ledger and fund an account.
+```sql
+CREATE TABLE ledger (id INT, balance INT);
+INSERT INTO ledger VALUES (1, 1000), (2, 0);
+
+```
+
+**Step 2:** Start a transaction to transfer 500 from Account 1 to Account 2.
+
+```sql
+BEGIN;
+UPDATE ledger SET balance = balance - 500 WHERE id = 1;
+
+```
+
+**Step 3:** Simulate an application crash or business logic failure by explicitly rolling back the transaction.
+
+```sql
+ROLLBACK;
+
+```
+
+**Step 4:** Verify the state. The money never left Account 1.
+
+```sql
+SELECT * FROM ledger;
+
+```
+
+<DoubleTerminal title="Lab 01: The All-or-Nothing Contract" />
+
+---
+
+## 2. Consistency: Engine-Enforced Constraints
+
+Application code is volatile. Developers push bugs, bypass validations, and write bad migration scripts. If the database blindly accepts whatever the application sends, the data decays.
+
+**Consistency** means the database engine itself enforces the business rules. It guarantees that any transaction will bring the database from one valid state to another valid state. This is achieved through strict typing, foreign keys, and internal checks.
+
+### The Sandbox: Rejecting Bad Mutations
+
+Let's force the database to act as the final line of defense against application bugs.
+
+**Step 1:** In Terminal A, create an inventory table with a strict `CHECK` constraint. We cannot have negative inventory.
+
+```sql
+CREATE TABLE inventory (
+  item_id INT PRIMARY KEY, 
+  stock INT CHECK (stock >= 0)
+);
+INSERT INTO inventory VALUES (1, 50);
+
+```
+
+**Step 2:** Attempt to process an order for 100 items.
+
+```sql
+UPDATE inventory SET stock = stock - 100 WHERE item_id = 1;
+
+```
+
+<DoubleTerminal title="Lab 02: Constraint Enforcement" />
+
+*Result:* The engine intercepts the mutation, evaluates the constraint, and throws a violation error. The application code failed, but the database state remains pure.
+
+---
+
+## 3. Isolation: Concurrency Control
+
+When thousands of users hit a database at the same time, their transactions overlap. **Isolation** determines how strictly the database separates these concurrent operations from seeing each other's incomplete work.
+
+PostgreSQL handles this using **MVCC** (Multi-Version Concurrency Control), essentially creating invisible copies of rows so readers don't block writers, and writers don't block readers.
+
+*Note: Isolation is a massive topic involving race conditions and read phenomena. We have a dedicated, interactive module specifically for observing Isolation Levels under concurrency.*
+
+---
+
+## 4. Durability: Surviving Power Loss
+
+When you execute a `COMMIT`, the database doesn't just update the data in RAM. RAM is volatile. If the power cable is pulled a millisecond after the commit, the data is gone.
+
+**Durability** guarantees that once a transaction is committed, it will survive a system crash.
+
+### The Mechanics of Durability: WAL
+
+Relational databases achieve this using a **Write-Ahead Log (WAL)**.
+
+1. Before modifying the actual table files, the engine writes the *intent* of the change to an append-only log file.
+2. It then issues a blocking `fsync()` system call to the OS, forcing the disk hardware to flush the log from cache to physical storage.
+3. Only when the disk hardware confirms the write does the database return `Query OK` to the user.
+
+If the server loses power, upon reboot, the database reads the WAL and replays any operations that were logged but not yet written to the main table files.
+

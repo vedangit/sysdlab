@@ -16,14 +16,11 @@ export const Terminal = ({ id, placeholder = "Type SQL here..." }: TerminalProps
   const xtermRef = useRef<XTerm | null>(null);
   const { db, isReady } = usePgLite();
   
-  // Use a mutable ref instead of state to prevent the stale closure bug
   const inputBuffer = useRef("");
 
-  // Refs to prevent stale closures inside the xterm event listeners
   const dbRef = useRef(db);
   const isReadyRef = useRef(isReady);
 
-  // Keep the refs perfectly synced with the Postgres Context
   useEffect(() => {
     dbRef.current = db;
     isReadyRef.current = isReady;
@@ -33,7 +30,6 @@ export const Terminal = ({ id, placeholder = "Type SQL here..." }: TerminalProps
     let isMounted = true;
     if (!terminalRef.current) return;
 
-    // 1. Initialize core terminal
     const term = new XTerm({
       theme: {
         background: "#111111",
@@ -49,58 +45,78 @@ export const Terminal = ({ id, placeholder = "Type SQL here..." }: TerminalProps
 
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
-    term.open(terminalRef.current);
     xtermRef.current = term;
 
-    term.writeln(`\x1b[33m==> Terminal ${id} Connected\x1b[0m`);
-    term.write("\r\n$ ");
+    // --- THE BOOTLOADER LOCK ---
+    // Instead of immediately opening, we wait until the DOM physically exists.
+    const bootTerminal = () => {
+      if (!isMounted || !terminalRef.current) return;
 
-    // 2. The Bulletproof Resize Handler
-    const resizeObserver = new ResizeObserver(() => {
+      // If the browser hasn't painted the width yet, loop and wait.
+      if (terminalRef.current.offsetWidth === 0) {
+        requestAnimationFrame(bootTerminal);
+        return;
+      }
+
+      // Safe to boot. The div has physical pixels.
+      try {
+        term.open(terminalRef.current);
+        fitAddon.fit();
+        term.writeln(`\x1b[33m==> Terminal ${id} Connected\x1b[0m`);
+        term.write("\r\n$ ");
+      } catch (error) {
+        // Harmlessly swallow any internal xterm layout panics
+      }
+    };
+
+    // Kick off the boot sequence
+    requestAnimationFrame(bootTerminal);
+
+    // --- THE RESIZE SAFETY VALVE ---
+    const resizeObserver = new ResizeObserver((entries) => {
       if (!isMounted) return;
+      
+      const { width, height } = entries[0].contentRect;
+      if (width === 0 || height === 0) return; 
       
       requestAnimationFrame(() => {
         if (!isMounted) return;
         try {
           fitAddon.fit();
-        } catch (e) {
-          // Swallow any mid-render dimension panics harmlessly
-        }
+        } catch (e) {}
       });
     });
 
     resizeObserver.observe(terminalRef.current);
 
-    // 3. I/O Handling (Using the Mutable Ref)
+    // --- I/O HANDLING ---
     term.onData((data) => {
       const code = data.charCodeAt(0);
 
-      if (code === 13) { // Enter key
+      if (code === 13) { 
         term.write("\r\n");
-        executeSQL(inputBuffer.current); // Pass the current ref string
-        inputBuffer.current = ""; // Reset the ref
-      } else if (code === 127) { // Backspace
+        executeSQL(inputBuffer.current);
+        inputBuffer.current = "";
+      } else if (code === 127) { 
         if (inputBuffer.current.length > 0) {
           term.write("\b \b");
           inputBuffer.current = inputBuffer.current.slice(0, -1);
         }
-      } else { // Standard typing
+      } else { 
         term.write(data);
         inputBuffer.current += data;
       }
     });
 
-    // 4. Clean Destruction
     return () => {
       isMounted = false;
       resizeObserver.disconnect();
       term.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run absolutely once
+  }, []); 
 
   const executeSQL = async (query: string) => {
-    // Check the live refs, not the stale closure state
     if (!dbRef.current || !isReadyRef.current) {
       xtermRef.current?.writeln("\x1b[31mError: Database engine not ready or crashed.\x1b[0m");
       xtermRef.current?.write("\r\n$ ");
@@ -113,7 +129,6 @@ export const Terminal = ({ id, placeholder = "Type SQL here..." }: TerminalProps
     }
 
     try {
-      // Send execution to the WASM Postgres instance
       const result = await dbRef.current.query(query);
       
       if (result.rows.length === 0) {

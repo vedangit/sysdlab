@@ -2,15 +2,21 @@ import { DoubleTerminal } from "@/components/lab/DoubleTerminal";
 
 # Isolation Levels: The 'I' in ACID
 
-In a distributed or highly concurrent system, multiple transactions will attempt to read and write the exact same rows simultaneously. Isolation levels define the rules of engagement for these conflicts.
+In a distributed or highly concurrent system, multiple transactions will attempt to read and write the exact same rows simultaneously. Isolation levels define the rules of engagement for these conflicts. The SQL standard defines four levels, each trading performance for stricter data integrity.
 
+---
 
+## 1. Read Uncommitted & The Dirty Read
 
-## The Non-Repeatable Read
+A **Dirty Read** happens when a transaction reads data that has been written by another transaction but *not yet committed*. If the other transaction rolls back, your system just made decisions based on phantom data.
 
-A non-repeatable read occurs when a transaction reads the same row twice, but gets different data each time because another transaction modified that row and committed in the middle of your reads.
+*Note on Postgres:* The PostgreSQL engine strictly enforces data integrity at a baseline. Even if you explicitly set `ISOLATION LEVEL READ UNCOMMITTED`, Postgres will silently upgrade it to `READ COMMITTED`. It physically cannot perform a dirty read, so we skip straight to the next level.
 
-By default, Postgres runs in `READ COMMITTED` isolation, which prevents "Dirty Reads" but allows "Non-Repeatable Reads".
+---
+
+## 2. Read Committed & The Non-Repeatable Read
+
+This is the default isolation level in PostgreSQL. It guarantees you will only read committed data. However, it allows **Non-Repeatable Reads**: reading the same row twice in one transaction but getting different data because another transaction updated it in between your reads.
 
 ### The Sandbox
 Let's prove this. Use the terminals below to simulate two concurrent users hitting your database. Both terminals are connected to the same WASM Postgres instance.
@@ -35,8 +41,86 @@ UPDATE accounts SET balance = 500 WHERE id = 1;
 **Step 4:** Back in Terminal A, run the `SELECT` query again.
 \`\`\`sql
 SELECT balance FROM accounts WHERE id = 1;
+COMMIT;
 \`\`\`
 
 <DoubleTerminal title="Lab 01: Concurrency Conflict" />
 
-Notice the result. Even though Terminal A is inside a single, continuous transaction, the data shifted underneath it. This is why understanding your isolation level is critical for data integrity.
+Notice the result. Even though Terminal A was inside a continuous transaction, the data shifted underneath it. 
+
+---
+
+## 3. Repeatable Read & Snapshot Isolation
+
+To fix the shifting data problem, we step up to `REPEATABLE READ`. When a transaction starts in this level, it takes a freeze-frame snapshot of the database. It will only ever see data committed *before* the transaction began.
+
+Let's run the exact same scenario from above, but upgrade the engine's isolation level.
+
+**Step 1:** In Terminal A, begin a new transaction with strict isolation.
+\`\`\`sql
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+SELECT balance FROM accounts WHERE id = 1;
+\`\`\`
+
+**Step 2:** In Terminal B, try to sabotage the read again.
+\`\`\`sql
+UPDATE accounts SET balance = 9999 WHERE id = 1;
+\`\`\`
+
+**Step 3:** Back in Terminal A, read the balance.
+\`\`\`sql
+SELECT balance FROM accounts WHERE id = 1;
+COMMIT;
+\`\`\`
+
+<DoubleTerminal title="Lab 02: Snapshot Isolation" />
+
+*Result:* Terminal A still sees `500` (or whatever the balance was when the transaction started). It is completely insulated from Terminal B's background noise. 
+
+---
+
+## 4. Serializable & Write Skew
+
+`SERIALIZABLE` is the strictest level. It guarantees that if transactions run concurrently, the final database state will be identical to if they had run sequentially (one after the other). 
+
+It prevents complex anomalies like **Write Skew**. 
+
+Imagine a hospital system. The rule is: *At least one doctor must be on call.* Currently, both Alice and Bob are on call. They both try to book time off at the exact same millisecond. 
+
+**Step 1:** Setup the system in Terminal A.
+\`\`\`sql
+CREATE TABLE doctors (name VARCHAR(50), on_call BOOLEAN);
+INSERT INTO doctors VALUES ('Alice', true), ('Bob', true);
+\`\`\`
+
+**Step 2:** Both doctors begin transactions simultaneously.
+*Terminal A (Alice):*
+\`\`\`sql
+BEGIN ISOLATION LEVEL SERIALIZABLE;
+SELECT count( * ) FROM doctors WHERE on_call = true;
+\`\`\`
+*Terminal B (Bob):*
+\`\`\`sql
+BEGIN ISOLATION LEVEL SERIALIZABLE;
+SELECT count( * ) FROM doctors WHERE on_call = true;
+\`\`\`
+*(Both see `count = 2`. The rule is safe).*
+
+**Step 3:** They both update their own status and commit.
+*Terminal A (Alice):*
+\`\`\`sql
+UPDATE doctors SET on_call = false WHERE name = 'Alice';
+COMMIT;
+\`\`\`
+
+*Terminal B (Bob):*
+\`\`\`sql
+UPDATE doctors SET on_call = false WHERE name = 'Bob';
+COMMIT;
+\`\`\`
+
+<DoubleTerminal title="Lab 03: Serialization Engine" />
+
+When Terminal B tries to commit, the Postgres engine detects the serialization conflict and throws a fatal error: `ERROR: could not serialize access due to read/write dependencies among transactions`. 
+
+The database intentionally aborted Bob's transaction to protect the system's integrity, ensuring at least one doctor remains on call.
