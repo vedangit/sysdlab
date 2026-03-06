@@ -1,6 +1,7 @@
 import "./globals.css";
 import { PgLiteProvider } from "@/components/lab/PgLiteProvider";
 import { Navbar } from "@/components/ui/Navbar";
+import { Footer } from "@/components/ui/Footer"; // <--- Import
 export const metadata = {
   title: "System Design Lab",
   description: "Interactive system design and database internals",
@@ -20,6 +21,7 @@ export default function RootLayout({
           <main className="min-h-screen">
             {children}
           </main>
+          <Footer />
         </PgLiteProvider>
       </body>
     </html>
