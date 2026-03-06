@@ -16,33 +16,50 @@ export const ApiRouterSandbox = ({ title, defaultCode, testScript }: ApiRouterSa
   const [isRunning, setIsRunning] = useState(false);
 
   const runCode = async () => {
-    if (!isReady) {
-      setLogs(["> \x1b[31mError: Multi-Node cluster is still provisioning...\x1b[0m"]);
-      return;
-    }
-
+    // We allow running even if nodes aren't ready (isReady check removed) 
+    // because this might be a pure JS/File lab that doesn't need the DB.
+    
     setIsRunning(true);
     const currentLogs: string[] = [];
     
-    // A secure logging interceptor to pipe output to our UI instead of the browser console
+    // A secure logging interceptor to pipe output to our UI
     const log = (msg: string) => {
       currentLogs.push(msg);
       setLogs([...currentLogs]); 
     };
 
+    // --- SYSTEM SIMULATOR (File I/O & Time) ---
+    const fileSystem: Record<string, any> = {};
+    
+    const sys = {
+      // Simulate reading a file with slight latency (10ms)
+      readFile: async (path: string) => {
+        await new Promise(r => setTimeout(r, 10)); 
+        return fileSystem[path];
+      },
+      // Simulate writing a file with slight latency
+      writeFile: async (path: string, content: any) => {
+        await new Promise(r => setTimeout(r, 10));
+        fileSystem[path] = content;
+      },
+      // The sleep function for creating race condition windows
+      sleep: (ms: number) => new Promise(r => setTimeout(r, ms))
+    };
+    // ------------------------------------------
+
     try {
-      // The Architecture Flex: We are building a dynamic async execution context.
-      // We inject the WASM 'nodes' and our custom 'log' function directly into their code's scope.
+      // The Architecture Flex: We inject 'sys' into the scope now
       const executable = new Function(
         'nodes', 
         'log', 
+        'sys', // <--- New injected tool
         `return (async () => {
           try {
-            // 1. Evaluate the user's routing logic
+            // 1. Evaluate the user's logic
             ${code}
             
             // 2. Execute the hidden test suite
-            log("\\n> --- Executing Incoming Requests ---");
+            log("\\n> --- Executing Simulation ---");
             ${testScript}
             
           } catch (err) {
@@ -51,7 +68,8 @@ export const ApiRouterSandbox = ({ title, defaultCode, testScript }: ApiRouterSa
         })();`
       );
 
-      await executable(nodes, log);
+      // Execute with the new system tool passed in
+      await executable(nodes, log, sys);
     } catch (err: any) {
       log(`> ❌ Compilation Error: ${err.message}`);
     } finally {
@@ -65,10 +83,10 @@ export const ApiRouterSandbox = ({ title, defaultCode, testScript }: ApiRouterSa
         <span>{title}</span>
         <button 
           onClick={runCode}
-          disabled={isRunning || !isReady}
+          disabled={isRunning}
           className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 px-3 py-1 rounded-sm transition-colors disabled:opacity-50"
         >
-          {isRunning ? "Executing..." : "Deploy API Router"}
+          {isRunning ? "Executing..." : "Run Simulation"}
         </button>
       </div>
       
@@ -91,6 +109,7 @@ export const ApiRouterSandbox = ({ title, defaultCode, testScript }: ApiRouterSa
               className={`text-sm mb-1 ${
                 line.includes('❌') ? 'text-red-400' : 
                 line.includes('✅') ? 'text-green-400' : 
+                line.includes('⚠️') ? 'text-amber-400' :
                 'text-zinc-400'
               }`}
             >
