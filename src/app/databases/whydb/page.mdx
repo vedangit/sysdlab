@@ -228,3 +228,50 @@ title="Simulation: The Double Booking"
 defaultCode={raceCode}
 testScript={raceTest}
 />
+
+
+## A Note on Database Types
+
+So far, the discussion has implicitly described a **relational database**. Systems like **PostgreSQL**, **MySQL**, and **SQLite** follow this model.
+
+Relational databases organize information into **tables** with defined schemas:
+
+```
+Users
+-------------------------
+id | name   | email
+1  | Alice  | a@x.com
+2  | Bob    | b@x.com
+```
+
+Relationships between tables are expressed through **keys** and queried using **SQL**.
+
+This model has dominated software engineering for decades because it provides strong guarantees around correctness and consistency.
+
+However, relational systems are **not the only type of database**.
+
+As applications scaled to massive internet workloads, other designs emerged. These are often grouped under the label **NoSQL databases**.
+
+Some common categories include:
+
+```
+
+| Database Type | Idea                                       | Example Systems  |
+| ------------- | ------------------------------------------ | ---------------- |
+| Document      | Store flexible JSON-like objects           | MongoDB          |
+| Key–Value     | Simple lookup table                        | Redis            |
+| Wide Column   | Optimized for massive distributed datasets | Apache Cassandra |
+| Graph         | Designed for relationship-heavy data       | Neo4j            |
+
+```
+
+These systems often trade strict guarantees (like full ACID transactions) for **scalability, flexibility, or performance at extreme scale**.
+
+For most backend systems — especially financial systems, SaaS products, and transactional platforms — relational databases remain the default choice.
+
+Since this course focuses on **backend engineering fundamentals**, the primary system we will study is **PostgreSQL**. Many core concepts such as **transactions, indexing, query planning, and isolation** originate here and apply broadly across modern databases.
+
+Later, once these fundamentals are clear, it becomes easier to understand **why alternative database designs exist** and when they make sense.
+
+```
+```
