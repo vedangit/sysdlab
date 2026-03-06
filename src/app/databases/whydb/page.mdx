@@ -1,0 +1,230 @@
+import { ApiRouterSandbox } from "@/components/lab/ApiRouterSandbox";
+
+export const raceCode = `// State: 'tickets.txt' currently contains "1"
+
+async function buyTicket(user) {
+  // 1. READ: Check current ticket count
+  // We simulate a 50ms delay to read from the "file"
+  let currentTickets = await sys.readFile('tickets.txt');
+  
+  log(\`> \${user} sees \${currentTickets} ticket(s) left.\`);
+
+  if (currentTickets > 0) {
+    // Simulate thinking/processing time (The "Race" Window)
+    await sys.sleep(100);
+    
+    // 2. WRITE: Decrement and save
+    let newCount = currentTickets - 1;
+    await sys.writeFile('tickets.txt', newCount);
+    
+    log(\`> ✅ \${user} purchased a ticket! (Remaining: \${newCount})\`);
+  } else {
+    log(\`> ❌ \${user} failed. Sold out.\`);
+  }
+}`;
+
+export const raceTest = `
+  // Reset the "File" to 1 ticket
+  await sys.writeFile('tickets.txt', 1);
+  
+  log("--- Starting Race Condition ---");
+  
+  // Fire both requests simultaneously (no await between them)
+  const request1 = buyTicket('Alice');
+  const request2 = buyTicket('Bob');
+  
+  // Wait for both to finish
+  await Promise.all([request1, request2]);
+  
+  // Audit the final state
+  const finalCount = await sys.readFile('tickets.txt');
+  
+  if (finalCount === 0) {
+     // This theoretically shouldn't happen in this buggy script, 
+     // but if it does, it means we got lucky.
+     log("--- Final Audit ---");
+     log("Inventory: " + finalCount);
+  } else if (finalCount === -1) {
+     // This is the "Double Spend" scenario where they blindly decremented
+     log("--- Final Audit ---");
+     log("⚠️ DATA CORRUPTION DETECTED!");
+     log("Inventory is -1. We sold 2 tickets but only had 1.");
+  } else {
+     // This is the "Lost Update" scenario
+     // Both wrote "0", so the file says "0", but we promised 2 tickets.
+     log("--- Final Audit ---");
+     log("⚠️ LOGIC FAILURE DETECTED!");
+     log("The file says 0, but BOTH users were told 'Success'.");
+     log("We just sold the same seat twice.");
+  }
+`;
+
+
+{/* -------------------------------------------------------------------------------- */}
+{/* MDX CONTENT STARTS BELOW                                   */}
+{/* -------------------------------------------------------------------------------- */}
+
+
+# Lesson 1: Why Databases Exist
+
+## Introduction: The Data Problem
+
+Before studying the mechanics of databases, it helps to start with a fundamental observation:
+
+> **Core Principle:** Every important software system eventually becomes a data problem.
+
+Initially, applications are small. Data fits entirely in memory, and programs behave predictably. However, as usage grows, the system faces critical questions that simple code cannot answer:
+
+* **Persistence:** Where should data live so it survives crashes?
+
+* **Integrity:** How can many users modify data safely at the same time?
+
+* **Retrieval:** How can we find specific information instantly among millions of records?
+
+Databases exist specifically to answer these questions.
+
+## The Need for Persistent Memory
+
+Programs primarily operate in **RAM** (Random Access Memory). RAM is incredibly fast, but it is **volatile**.
+
+When a program stops running:
+
+1. Memory is cleared.
+
+2. All variables disappear.
+
+3. Application state is lost.
+
+Consider a simple variable assignment:
+
+```python
+user_balance = 100
+
+```
+
+If the server restarts, this value is obliterated.
+
+Most real-world systems - bank balances, order histories, user accounts - cannot tolerate this volatility. They require **persistent storage**: data that remains intact even when power is cut or software is deployed.
+
+Databases provide this structured, persistent storage.
+
+## Why Files Are Not Enough
+
+A natural question arises: **Why not just store everything in text files?**
+
+For trivial scripts, this works. However, as complexity grows, file-based storage fails in three specific ways:
+
+### Problem 1: Inefficient Searching
+
+Suppose we store user records in a massive text file. To find a user by email, the program must read the file from top to bottom.
+
+```text
+scan record 1...
+scan record 2...
+...
+scan record 1,000,000...
+
+```
+
+This is called a **Linear Scan** (or $O(N)$ complexity). If the file contains 10 million users, every login attempt becomes incredibly slow.
+
+> **The Database Solution:** Databases use **Indexes**.
+> An index allows the system to jump directly to the specific record without scanning the whole file (similar to the index at the back of a book), reducing lookup time from seconds to milliseconds.
+
+### Problem 2: Concurrency & Race Conditions
+
+Modern applications are **multi-user systems**. Two people may attempt to update the same data simultaneously, leading to a **Race Condition**.
+
+**Example:** Two customers attempt to buy the *last* concert ticket.
+
+1. **Customer A** reads database: `Tickets = 1`
+2. **Customer B** reads database: `Tickets = 1`
+3. **Customer A** buys ticket: `Tickets = 0`
+4. **Customer B** buys ticket: `Tickets = 0` *(Overwrites A's update or allows a negative balance)*
+
+The system has now sold the same ticket twice.
+
+> **The Database Solution:** Databases use **Transactions** and **Concurrency Control** (locking) to ensure that if Customer A is buying the ticket, Customer B must wait until A finishes.
+
+### Problem 3: Partial Failures
+
+Failures happen. Machines crash, power fails, and networks disconnect.
+
+Consider a banking transfer:
+
+1. Deduct $100 from Account A.
+2. Add $100 to Account B.
+
+If a crash occurs *after* step 1 but *before* step 2, the system enters an **inconsistent state**:
+
+* Account A: `-$100`
+* Account B: `Unchanged`
+* **Result:** Money has simply vanished.
+
+> **The Database Solution:** Databases guarantee **Atomicity**.
+> This ensures that complex operations are treated as a single unit. Either *all* steps succeed, or *none* of them happen. If a crash occurs mid-way, the database "rolls back" to the state before the transaction started.
+
+## Historical Context: The Financial Standard
+
+Historically, the finance industry forced the evolution of these robust systems. Financial ledgers require precise record-keeping, high transaction volumes, and absolute guarantees against data corruption.
+
+A small mistake in a social app is a bug; a small mistake in a bank ledger is a lawsuit. These requirements led directly to the **ACID** model (Atomicity, Consistency, Isolation, Durability).
+
+Here is how financial needs map to modern database features:
+
+* **Accurate Ledgers:** Require **Transactions** to ensure group operations happen together.
+* **Simultaneous Trades:** Require **Concurrency Control** to prevent conflicts.
+* **Audit Trails:** Require **Durable Storage** so history is never lost.
+* **Prevention of "Half-Finished" Trades:** Requires **Atomic Guarantees** (all or nothing).
+
+## Summary: What a Database Actually Does
+
+A database is not just a bucket for files; it is a **Data Management System**. It abstracts away the complex problems of computer science so application developers can focus on business logic.
+
+At a high level, a database provides:
+
+1. **Persistent Storage:** Data survives restarts.
+2. **Efficient Retrieval:** Indexes allow fast queries (`O(log N)` or better).
+3. **Concurrency Control:** Multiple users can interact safely.
+4. **Integrity Guarantees:** Constraints prevent invalid data (e.g., negative balances).
+5. **Crash Recovery:** Automated restoration of state after hardware failure.
+
+## Databases in System Architecture
+
+In a standard system architecture, the database acts as the foundational layer of truth.
+
+**The Flow:**
+
+```
+[ Client ] ➔ ➔ ➔ [ Application Server ] ➔ ➔ ➔ [ Database ]
+  (User)                 (Logic)                  (Storage)
+
+```
+
+* **Application Server:** Handles ephemeral tasks (authentication, rendering web pages, calculating logic).
+* **Database:** Handles long-term responsibilities (storage, integrity, retrieval).
+
+This **Separation of Concerns** allows each component to specialize. The application server can be restarted or replaced easily because the valuable data sits safely in the database.
+
+> *Everything we study next - Indexes, SQL, ACID, Replication - are simply mechanisms designed to make this shared storage faster, more reliable, and more scalable.*
+
+```
+
+```
+### Lab: The "File-Based" Database Failure
+
+Let's prove why we need databases. Below is a simulation of a ticket booking system that uses a simple text file (`tickets.txt`) instead of a database.
+
+**The Scenario:**
+There is only **1 ticket** left. Two users (Alice and Bob) try to buy it at the exact same time.
+
+**Your Task:**
+1.  Read the code below. Notice how it reads the file, waits 100ms (simulating network lag), and then writes back the new count.
+2.  Click **"Run Race Condition"**.
+3.  Observe how both users successfully buy the *same* ticket because they both read `1` before anyone wrote `0`.
+
+<ApiRouterSandbox
+title="Simulation: The Double Booking"
+defaultCode={raceCode}
+testScript={raceTest}
+/>
