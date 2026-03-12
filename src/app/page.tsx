@@ -51,7 +51,7 @@ export default function Home() {
             >
               <div className="flex justify-between items-start mb-3">
                 <h3 className="text-lg text-zinc-200 font-semibold group-hover:text-amber-400 transition-colors">
-                  01. Relational Databases: ACID
+                  02. Relational Databases: ACID
                 </h3>
                 <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-1 uppercase tracking-wider">
                   Interactive Lab
@@ -59,6 +59,48 @@ export default function Home() {
               </div>
               <p className="text-zinc-400 text-sm leading-relaxed mb-4">
                 What does a relational database bring to the table? Let's find out. Features a double-terminal environment connected to a shared, in-memory PostgreSQL instance.
+              </p>
+              <div className="flex gap-2">
+                <span className="text-xs text-zinc-500">#ACID</span>
+                <span className="text-xs text-zinc-500">#Concurrency</span>
+                <span className="text-xs text-zinc-500">#Postgres</span>
+              </div>
+            </Link>
+            <Link 
+              href="/databases/relationaldbs" 
+              className="group block border border-zinc-800 bg-[#151515] p-5 rounded-sm hover:border-zinc-600 transition-colors duration-200"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="text-lg text-zinc-200 font-semibold group-hover:text-amber-400 transition-colors">
+                  03. Isolation Levels: The 'I' in ACID
+                </h3>
+                <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-1 uppercase tracking-wider">
+                  Interactive Lab
+                </span>
+              </div>
+              <p className="text-zinc-400 text-sm leading-relaxed mb-4">
+                Because 'sharing is caring' is a terrible philosophy for concurrent SQL transactions.
+              </p>
+              <div className="flex gap-2">
+                <span className="text-xs text-zinc-500">#ACID</span>
+                <span className="text-xs text-zinc-500">#Concurrency</span>
+                <span className="text-xs text-zinc-500">#Postgres</span>
+              </div>
+            </Link>
+            <Link 
+              href="/databases/relationaldbs" 
+              className="group block border border-zinc-800 bg-[#151515] p-5 rounded-sm hover:border-zinc-600 transition-colors duration-200"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="text-lg text-zinc-200 font-semibold group-hover:text-amber-400 transition-colors">
+                  04. Scaling Databases
+                </h3>
+                <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-1 uppercase tracking-wider">
+                  Interactive Lab
+                </span>
+              </div>
+              <p className="text-zinc-400 text-sm leading-relaxed mb-4">
+                Why just buy a bigger server' is a strategy that eventually hits the laws of physics.
               </p>
               <div className="flex gap-2">
                 <span className="text-xs text-zinc-500">#ACID</span>
