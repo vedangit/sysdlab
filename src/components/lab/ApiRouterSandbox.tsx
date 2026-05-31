@@ -10,7 +10,7 @@ interface ApiRouterSandboxProps {
 }
 
 export const ApiRouterSandbox = ({ title, defaultCode, testScript }: ApiRouterSandboxProps) => {
-  const { nodes, isReady } = useMultiNode();
+  const { nodes } = useMultiNode();
   const [code, setCode] = useState(defaultCode);
   const [logs, setLogs] = useState<string[]>(["> System ready. Waiting for deployment..."]);
   const [isRunning, setIsRunning] = useState(false);
@@ -29,7 +29,7 @@ export const ApiRouterSandbox = ({ title, defaultCode, testScript }: ApiRouterSa
     };
 
     // --- SYSTEM SIMULATOR (File I/O & Time) ---
-    const fileSystem: Record<string, any> = {};
+    const fileSystem: Record<string, unknown> = {};
     
     const sys = {
       // Simulate reading a file with slight latency (10ms)
@@ -38,7 +38,7 @@ export const ApiRouterSandbox = ({ title, defaultCode, testScript }: ApiRouterSa
         return fileSystem[path];
       },
       // Simulate writing a file with slight latency
-      writeFile: async (path: string, content: any) => {
+      writeFile: async (path: string, content: unknown) => {
         await new Promise(r => setTimeout(r, 10));
         fileSystem[path] = content;
       },
@@ -63,15 +63,17 @@ export const ApiRouterSandbox = ({ title, defaultCode, testScript }: ApiRouterSa
             ${testScript}
             
           } catch (err) {
-            log("> ❌ Runtime Error: " + err.message);
+            const message = err instanceof Error ? err.message : String(err);
+            log("> ❌ Runtime Error: " + message);
           }
         })();`
       );
 
       // Execute with the new system tool passed in
       await executable(nodes, log, sys);
-    } catch (err: any) {
-      log(`> ❌ Compilation Error: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      log(`> ❌ Compilation Error: ${message}`);
     } finally {
       setIsRunning(false);
     }

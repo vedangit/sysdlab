@@ -1,0 +1,57 @@
+import { OopEngineLab } from "@/components/lab/oop/OopEngineLab";
+
+# Runtime Dispatch, Vtables, and Structural Types
+
+Polymorphism is the gap between what the compiler can prove from the reference type and what the runtime discovers from the actual object header. Low level design depends on understanding where that gap is resolved.
+
+## Compile-Time Dispatch
+
+Overloading is decided at compile time. The compiler chooses between methods using the method name, parameter count, and static parameter types.
+
+```java
+void save(User user) {}
+void save(Order order) {}
+```
+
+Return type alone cannot distinguish overloads, because the call site may ignore the return value. The compiler must be able to select the target from the invocation shape before execution begins.
+
+## Runtime Dispatch
+
+Overriding is decided at runtime. A parent reference can point at a child object:
+
+```java
+Vehicle v = new Car();
+v.start();
+```
+
+The compiler verifies that `Vehicle` exposes `start()`. It does not hardwire the call to `Vehicle::start`. Instead, the runtime reads the object header, follows the hidden vtable pointer for the actual class, and jumps to the most specific implementation in the matching method slot.
+
+This is why parent-typed references can preserve child behavior without forcing callers to know the concrete class.
+
+## Inheritance Topology
+
+Single inheritance creates one direct implementation path. Multiple concrete inheritance can create the diamond problem: two parent paths define the same method and the child has no unambiguous route.
+
+Modern Java-style designs avoid multiple concrete class inheritance. They use interfaces for capability contracts and force the implementing class to resolve collisions explicitly when default methods overlap.
+
+## Class Connections
+
+Object relationships are not all the same.
+
+**Realization** means a concrete class materializes an interface contract. `class JsonLogger implements Logger` is realization.
+
+**Association** means one object keeps long-term knowledge of another through a retained field. A `Book` with a private `Author author` field has an association to `Author`.
+
+**Dependency** means short-term use. A `Document.print(Printer p)` method depends on `Printer` only for that scoped call.
+
+## Lab 2.1: Virtual Method Table Tracker
+
+Step through a parent reference pointing at a child object. The inspector shows where static type checking stops and runtime vtable routing begins.
+
+<OopEngineLab lab="vtable" />
+
+## Lab 2.2: Structural Relationship Modeler
+
+Model a document printing pipeline. A method parameter should produce a dashed dependency. A retained field should produce a solid association.
+
+<OopEngineLab lab="relationships" />

@@ -1,0 +1,41 @@
+import { OopEngineLab } from "@/components/lab/oop/OopEngineLab";
+
+# Encapsulation Bounds & Contractual Abstraction
+
+Encapsulation is not aesthetic hiding. It is a runtime safety boundary. It prevents outside modules from mutating state in ways that violate the object's invariants.
+
+## Visibility Boundaries
+
+`private` is scoped to the defining class body. It is the strongest everyday tool for protecting object state.
+
+Package-private visibility, often called default visibility in Java, exposes members only to code in the same package. It is useful for tightly coupled implementation clusters that should not be public API.
+
+`protected` allows access from child classes, including across package boundaries. It should be used carefully because inherited write access can weaken invariants.
+
+`public` exposes the member globally to all code that can see the class. Public methods form the class contract. Public mutable fields usually destroy the contract because callers can bypass validation.
+
+## Encapsulation and Data Integrity
+
+A field such as `balance` is not just a number. It carries rules: it may not be negative, withdrawals must be positive, and overdrafts may be forbidden. If the field is public, any caller can ignore those rules.
+
+Encapsulation routes state changes through controlled methods. Those methods can validate input, reject illegal transitions, emit domain events, or preserve derived state consistently.
+
+## Abstract Classes vs. Interfaces
+
+An abstract class is a partial object model. It can hold instance fields, run constructors, define shared methods, and leave selected methods abstract for children.
+
+An interface is a behavioral contract. It says, "anything implementing this can perform these operations." Older Java interfaces were purely abstract and stateless. Modern interfaces can include stateless `default` methods so library authors can evolve APIs without breaking every implementation at once.
+
+The choice is architectural. Use an abstract class when children share state and lifecycle. Use an interface when unrelated classes need to advertise the same capability.
+
+## Lab 3.1: Thwarting State Corruption
+
+The starting bank account exposes its balance directly. The attack writes a negative balance from client code. Lock down the field and move mutation through a validating method.
+
+<OopEngineLab lab="encapsulation" />
+
+## Lab 3.2: Resolving Default Method Interface Collisions
+
+Two interfaces provide the same default method. The class implementing both must own the conflict by overriding the method and explicitly choosing or composing parent behavior.
+
+<OopEngineLab lab="interface-collision" />

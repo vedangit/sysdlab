@@ -15,6 +15,9 @@ export const Navbar = () => {
         <Link href="/" className="hover:text-zinc-300 transition-colors">
           Index
         </Link>
+        <Link href="/lld/oop" className="hover:text-zinc-300 transition-colors">
+          LLD
+        </Link>
         <a 
           href="https://github.com/" 
           target="_blank" 

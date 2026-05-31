@@ -64,7 +64,7 @@ export const Terminal = ({ id, placeholder = "Type SQL here..." }: TerminalProps
         fitAddon.fit();
         term.writeln(`\x1b[33m==> Terminal ${id} Connected\x1b[0m`);
         term.write("\r\n$ ");
-      } catch (error) {
+      } catch {
         // Harmlessly swallow any internal xterm layout panics
       }
     };
@@ -83,7 +83,7 @@ export const Terminal = ({ id, placeholder = "Type SQL here..." }: TerminalProps
         if (!isMounted) return;
         try {
           fitAddon.fit();
-        } catch (e) {}
+        } catch {}
       });
     });
 
@@ -138,8 +138,9 @@ export const Terminal = ({ id, placeholder = "Type SQL here..." }: TerminalProps
         const lines = output.split('\n');
         lines.forEach(line => xtermRef.current?.writeln(line));
       }
-    } catch (error: any) {
-      xtermRef.current?.writeln(`\x1b[31m${error.message}\x1b[0m`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      xtermRef.current?.writeln(`\x1b[31m${message}\x1b[0m`);
     }
     
     xtermRef.current?.write("\r\n$ ");
@@ -151,7 +152,12 @@ export const Terminal = ({ id, placeholder = "Type SQL here..." }: TerminalProps
         <span>Terminal {id}</span>
         <span className="text-amber-500/50">PostgreSQL (WASM)</span>
       </div>
-      <div ref={terminalRef} className="flex-grow p-2 overflow-hidden" style={{ minHeight: "250px" }} />
+      <div
+        ref={terminalRef}
+        aria-label={placeholder}
+        className="flex-grow p-2 overflow-hidden"
+        style={{ minHeight: "250px" }}
+      />
     </div>
   );
 };

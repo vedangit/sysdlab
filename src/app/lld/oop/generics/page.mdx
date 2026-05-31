@@ -1,0 +1,51 @@
+import { OopEngineLab } from "@/components/lab/oop/OopEngineLab";
+
+# Parameterized Polymorphism & Type Bounds
+
+Generics let a class or method operate across many types while preserving compile-time guarantees. They are how a reusable container can be flexible without falling back to unsafe `Object` storage everywhere.
+
+## Type Safety and Cast Elimination
+
+Without generics, a collection can accept any object and returns only `Object`. Every read requires a cast, and wrong assumptions fail at runtime.
+
+```java
+Object value = cache.get("user:1");
+User user = (User) value;
+```
+
+With generics, the API carries the type contract:
+
+```java
+Cache<String, User> cache = new Cache<>();
+User user = cache.get("user:1");
+```
+
+The compiler rejects mismatched key/value usage before the program runs.
+
+## Type Erasure
+
+In Java, generic parameters exist mainly for compile-time validation. During compilation, the type annotations are erased into their bounds, usually `Object` if no tighter bound exists. The compiler then injects casts at call sites where needed.
+
+This preserves compatibility with older runtimes, but it also means generic type parameters are not usually available as concrete runtime classes without extra metadata.
+
+## Wildcard Variance
+
+Variance decides whether a generic structure is safe to read from, write into, or both.
+
+`? extends T` means the actual type is `T` or a subtype. This is a producer contract. You can safely read values as `T`, but you cannot safely insert new `T` values, because the real list might be a more specific subtype.
+
+`? super T` means the actual type is `T` or an ancestor. This is a consumer contract. You can safely insert `T`, because every permitted runtime list can hold it.
+
+The practical rule is PECS: producer extends, consumer super.
+
+## Lab 4.1: The Invariant Read/Write Trap
+
+The initial code tries to insert an `Integer` into a `List<? extends Number>`. The compiler rejects it because the runtime list might actually be `List<Double>`. Change the boundary to a lower-bounded consumer contract.
+
+<OopEngineLab lab="variance" />
+
+## Lab 4.2: Building a Universal Type Storage Engine
+
+The starting cache uses raw `Object` references and forces casts on every read. Parameterize the cache as `Cache<K, V>` so the API preserves key and value types.
+
+<OopEngineLab lab="generic-cache" />
