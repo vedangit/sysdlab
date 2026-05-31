@@ -154,7 +154,7 @@ export function CreationalPatternsLab({ lessonId }: { lessonId: string }) {
   );
   const builderReady = builderView && activeFeatureList.length > 0;
 
-  const builderSignals = [
+  const builderSignals: Signal[] = [
     { label: "Active flags", value: String(activeFeatureList.length), tone: "good" as Tone },
     { label: "Constructor count", value: String(constructorCount), tone: "warn" as Tone },
     { label: "View", value: builderView ? "Builder" : "Telescoping", tone: builderView ? "good" : "warn" },
