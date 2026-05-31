@@ -1,0 +1,25 @@
+import { DesignPrinciplesLab } from "@/components/lab/design-principles/DesignPrinciplesLab";
+
+# Robust Contracts
+
+LSP keeps subtypes honest. ISP keeps interfaces small enough that clients only depend on what they use. DIP keeps high-level policy from depending on low-level detail.
+
+If a child class throws on a base method, the contract was too broad or the hierarchy was wrong. If a service constructor hardcodes a concrete database client, the dependency graph is too rigid to test cleanly.
+
+## Minimal Notes
+
+- LSP demands substitutable subtypes.
+- ISP removes unused methods from client-facing interfaces.
+- DIP moves concrete choices out of high-level modules and into injected abstractions.
+
+## Lab 2.1: Fixing Broken Hierarchy Contracts
+
+Split read and write contracts so `ReadOnlyReplica` does not inherit an operation it cannot honor.
+
+<DesignPrinciplesLab lab="lsp" />
+
+## Lab 2.2: Decoupling Hardcoded Adapters
+
+Inject `IDatabaseAdapter` into `AnalyticsDashboard`, then test it with a thin mock instead of a live `PostgreSQLClient`.
+
+<DesignPrinciplesLab lab="dip" />

@@ -1,0 +1,25 @@
+import { DesignPrinciplesLab } from "@/components/lab/design-principles/DesignPrinciplesLab";
+
+# Extensible Systems
+
+SRP says a class should have one reason to change. OCP says the system should accept new behavior without editing the stable core.
+
+The common failure mode is a god object: calculations, persistence, logging, and transport all trapped in one class. The fix is to split the responsibilities and let the orchestrator coordinate instead of owning every detail.
+
+## Minimal Notes
+
+- SRP keeps one actor per change reason.
+- OCP keeps the stable path closed and the extension path open.
+- Strategy, interface boundaries, and composition usually beat new conditionals.
+
+## Lab 1.1: Refactoring a God Object
+
+Split `OrderManager` into `PriceCalculator`, `InventoryRepository`, and `NotificationService`. The engine checks that the core math no longer owns inventory SQL or SMTP concerns.
+
+<DesignPrinciplesLab lab="srp" />
+
+## Lab 1.2: Killing the Conditional Ladder
+
+Replace the region switch with a `TaxStrategy` abstraction, then add `UKTaxStrategy` without putting `UK` back into `TaxProcessor`.
+
+<DesignPrinciplesLab lab="ocp" />

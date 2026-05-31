@@ -1,0 +1,25 @@
+import { DesignPrinciplesLab } from "@/components/lab/design-principles/DesignPrinciplesLab";
+
+# Minimalist Architecture
+
+DRY removes repeated knowledge. KISS keeps the shape of the solution understandable. YAGNI keeps speculative architecture from growing faster than the actual requirement.
+
+These principles are not about making code tiny for its own sake. They are about keeping a system easier to read, easier to change, and easier to ship.
+
+## Minimal Notes
+
+- DRY gives one source of truth.
+- KISS prefers the simplest direct path that works.
+- YAGNI cuts unused abstraction before it becomes permanent overhead.
+
+## Lab 3.1: Structural De-duplication
+
+Move the stream validation and hashing pipeline into one shared helper so both uploaders inherit the same safety rule.
+
+<DesignPrinciplesLab lab="dry" />
+
+## Lab 3.2: Pruning Speculative Scope
+
+Reduce the overbuilt feature-flag stack to a direct synchronous checker that matches the current team size and current need.
+
+<DesignPrinciplesLab lab="yagni" />
