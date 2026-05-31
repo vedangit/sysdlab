@@ -16,10 +16,10 @@ The common failure mode is a god object: calculations, persistence, logging, and
 
 Split `OrderManager` into `PriceCalculator`, `InventoryRepository`, and `NotificationService`. The engine checks that the core math no longer owns inventory SQL or SMTP concerns.
 
-<DesignPrinciplesLab lab="srp" />
+<DesignPrinciplesLab lab="srp" lessonId="/lld/design-principles/extensible-systems" />
 
 ## Lab 1.2: Killing the Conditional Ladder
 
 Replace the region switch with a `TaxStrategy` abstraction, then add `UKTaxStrategy` without putting `UK` back into `TaxProcessor`.
 
-<DesignPrinciplesLab lab="ocp" />
+<DesignPrinciplesLab lab="ocp" lessonId="/lld/design-principles/extensible-systems" />

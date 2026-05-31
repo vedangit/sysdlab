@@ -32,10 +32,10 @@ The choice is architectural. Use an abstract class when children share state and
 
 The starting bank account exposes its balance directly. The attack writes a negative balance from client code. Lock down the field and move mutation through a validating method.
 
-<OopEngineLab lab="encapsulation" />
+<OopEngineLab lab="encapsulation" lessonId="/lld/oop/encapsulation-abstraction" />
 
 ## Lab 3.2: Resolving Default Method Interface Collisions
 
 Two interfaces provide the same default method. The class implementing both must own the conflict by overriding the method and explicitly choosing or composing parent behavior.
 
-<OopEngineLab lab="interface-collision" />
+<OopEngineLab lab="interface-collision" lessonId="/lld/oop/encapsulation-abstraction" />

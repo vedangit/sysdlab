@@ -1,28 +1,9 @@
 import Link from "next/link";
+import { courseCatalog } from "@/lib/course-catalog";
 
-const lessons = [
-  {
-    href: "/lld/design-principles/extensible-systems",
-    index: "01",
-    title: "Extensible Systems",
-    body: "SRP and OCP keep responsibilities narrow and extension points explicit.",
-    tags: ["SRP", "OCP", "Strategy"],
-  },
-  {
-    href: "/lld/design-principles/robust-contracts",
-    index: "02",
-    title: "Robust Contracts",
-    body: "LSP, ISP, and DIP make hierarchies honest and dependencies testable.",
-    tags: ["LSP", "ISP", "DIP"],
-  },
-  {
-    href: "/lld/design-principles/minimalist-architecture",
-    index: "03",
-    title: "Minimalist Architecture",
-    body: "DRY, KISS, and YAGNI keep the codebase small, direct, and easy to change.",
-    tags: ["DRY", "KISS", "YAGNI"],
-  },
-];
+const lessons =
+  courseCatalog.lld.tracks.find((track) => track.id === "design-principles")
+    ?.lessons ?? [];
 
 export default function DesignPrinciplesIndexPage() {
   return (
@@ -64,13 +45,13 @@ export default function DesignPrinciplesIndexPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-zinc-600 group-hover:text-amber-500/70">
-                  Module {lesson.index}
+                  Module {lesson.order.toString().padStart(2, "0")}
                 </div>
                 <h2 className="m-0 text-lg font-semibold text-zinc-100 transition-colors group-hover:text-amber-400">
                   {lesson.title}
                 </h2>
                 <p className="m-0 mt-3 max-w-2xl text-sm leading-6 text-zinc-500">
-                  {lesson.body}
+                  {lesson.summary}
                 </p>
               </div>
               <span className="shrink-0 border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-500 group-hover:border-amber-500/30 group-hover:text-amber-400">
@@ -78,7 +59,7 @@ export default function DesignPrinciplesIndexPage() {
               </span>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
-              {lesson.tags.map((tag) => (
+              {lesson.labs.map((tag) => (
                 <span key={tag} className="font-mono text-xs text-zinc-500">
                   #{tag}
                 </span>

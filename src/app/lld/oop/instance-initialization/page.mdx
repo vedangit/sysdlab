@@ -48,10 +48,10 @@ Static methods do not have `this`, because they bind to the class definition rat
 
 This lab starts with a `Movie` object that owns a mutable nested `Cast` structure. The initial code aliases `copyMovie` to `originalMovie`, so both variables point to the same heap object. Run the engine first to see the corruption, then add a deep-copy constructor that duplicates the nested cast member array.
 
-<OopEngineLab lab="shallow-copy" />
+<OopEngineLab lab="shallow-copy" lessonId="/lld/oop/instance-initialization" />
 
 ## Lab 1.2: Constructing the Singleton Guard
 
 The unsafe version of `ConfigRegistry` can allocate two objects when two threads observe `instance == null` at the same time. Secure it by hiding the constructor and implementing double-checked locking with a `volatile` static reference.
 
-<OopEngineLab lab="singleton" />
+<OopEngineLab lab="singleton" lessonId="/lld/oop/instance-initialization" />

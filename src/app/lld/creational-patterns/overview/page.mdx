@@ -1,0 +1,59 @@
+import { CreationalPatternsLab } from "@/components/lab/creational-patterns/CreationalPatternsLab";
+
+# Creational Design Patterns
+
+Direct `new` calls are convenient, but they put configuration, lifecycle, and instance reuse in the hands of every caller. That works for tiny scripts, but it becomes painful once object creation starts carrying policy.
+
+## The Core Problem: Over-Reliance on `new`
+
+When the client code is responsible for both configuring and instantiating a dependency, creation logic leaks everywhere.
+
+- **Code duplication:** every caller needs to know constructor arguments and setup order.
+- **Modification fragility:** if the constructor changes, every direct `new` site becomes a change point.
+- **Resource inefficiency:** repeated instantiation can waste memory, sockets, or connection slots.
+
+The deeper issue is that creation policy is now spread across the codebase. A small constructor tweak can turn into a broad edit storm.
+
+## The Solution: Separate Creation from Usage
+
+Creational patterns move creation into a dedicated object or method, so callers ask for what they need instead of assembling every dependency themselves.
+
+```text
+[Client Code]  ->  [Creational Pattern Agent]  ->  [Concrete Instance]
+```
+
+This keeps the call site small, and it gives the system a single place to change when construction rules evolve.
+
+## Pattern Cheat Sheet
+
+| Pattern | Intuition | Best Fit |
+| --- | --- | --- |
+| **Singleton** | One shared manager for the whole process | Shared resources like connection pools |
+| **Factory / Factory Method** | Pick the right object without exposing the creation logic | Parser selection, handler routing |
+| **Builder** | Assemble a complex object step by step | Objects with many optional settings |
+| **Abstract Factory** | Create related object families together | Theme-aware UI kits, cross-platform families |
+| **Prototype** | Clone an existing object instead of creating from scratch | Expensive blueprints, repeated templates |
+
+## Why This Matters
+
+The lesson is not “always avoid `new`.” The lesson is to make creation deliberate.
+
+- Use **Builder** when a constructor starts turning into a parameter maze.
+- Use **Singleton** when one shared instance should coordinate access to a limited resource.
+- Use **Factory** when callers should not know which concrete class they are getting.
+- Use **Abstract Factory** when you need a family of related objects that must stay compatible.
+- Use **Prototype** when copying an initialized object is cheaper than reconstructing it.
+
+## Lab 1: Constructor Explosion Simulator
+
+Toggle the `DatabaseConnection` options below and watch how quickly the constructor matrix grows. Then collapse the mess into a single fluent builder.
+
+## Lab 2: Connection Pool Exhaustion Sandbox
+
+Run 100 virtual requests through a raw constructor path and then through a singleton-backed path. The difference is the whole lesson.
+
+## Lab 3: Structural Matching Challenge
+
+Match each design scenario to the pattern that solves it. The goal is to learn the “why” behind each pattern, not just the name.
+
+<CreationalPatternsLab lessonId="/lld/creational-patterns/overview" />

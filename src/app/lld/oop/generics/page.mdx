@@ -42,10 +42,10 @@ The practical rule is PECS: producer extends, consumer super.
 
 The initial code tries to insert an `Integer` into a `List<? extends Number>`. The compiler rejects it because the runtime list might actually be `List<Double>`. Change the boundary to a lower-bounded consumer contract.
 
-<OopEngineLab lab="variance" />
+<OopEngineLab lab="variance" lessonId="/lld/oop/generics" />
 
 ## Lab 4.2: Building a Universal Type Storage Engine
 
 The starting cache uses raw `Object` references and forces casts on every read. Parameterize the cache as `Cache<K, V>` so the API preserves key and value types.
 
-<OopEngineLab lab="generic-cache" />
+<OopEngineLab lab="generic-cache" lessonId="/lld/oop/generics" />

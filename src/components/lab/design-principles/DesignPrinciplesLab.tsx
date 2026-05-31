@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useCourseProgress } from "@/components/providers/CourseProgressProvider";
 
 type SignalTone = "neutral" | "good" | "bad" | "warn";
 
@@ -28,6 +29,11 @@ type LabConfig = {
 };
 
 type LabId = "srp" | "ocp" | "lsp" | "dip" | "dry" | "yagni";
+
+type DesignPrinciplesLabProps = {
+  lab: LabId;
+  lessonId: string;
+};
 
 const pass = (
   title: string,
@@ -436,8 +442,9 @@ const toneClass: Record<SignalTone, string> = {
   warn: "border-amber-500/30 text-amber-300",
 };
 
-export function DesignPrinciplesLab({ lab }: { lab: LabId }) {
+export function DesignPrinciplesLab({ lab, lessonId }: DesignPrinciplesLabProps) {
   const config = labs[lab];
+  const { recordLabResult } = useCourseProgress();
   const [code, setCode] = useState(config.defaultCode);
   const [result, setResult] = useState<LabResult>({
     status: "idle",
@@ -462,7 +469,11 @@ export function DesignPrinciplesLab({ lab }: { lab: LabId }) {
         </div>
         <button
           type="button"
-          onClick={() => setResult(config.run(code))}
+          onClick={() => {
+            const next = config.run(code);
+            setResult(next);
+            recordLabResult("lld", lessonId, lab, next.status);
+          }}
           className="w-full border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs uppercase tracking-wider text-amber-300 transition-colors hover:bg-amber-500/20 md:w-auto"
         >
           Run Architecture Check

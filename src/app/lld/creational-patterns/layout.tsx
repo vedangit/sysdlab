@@ -1,7 +1,7 @@
 import { CourseSidebar } from "@/components/ui/CourseSidebar";
 import { TableOfContents } from "@/components/ui/TableOfContents";
 
-export default function DesignPrinciplesLayout({
+export default function CreationalPatternsLayout({
   children,
 }: {
   children: React.ReactNode;

@@ -1,15 +1,13 @@
-import { LldOverview } from "@/components/ui/LldOverview";
+import { DatabaseOverview } from "@/components/ui/DatabaseOverview";
 
-export default function LldIndexPage() {
+export default function DatabasesIndexPage() {
   return (
     <div className="min-h-screen bg-[#111111] text-zinc-300 font-mono p-6 md:p-16 selection:bg-amber-500/30 selection:text-amber-200">
       <header className="mb-16 border-b border-zinc-800 pb-8 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-zinc-100 mb-2 tracking-tight">
-          Low Level Design
-        </h1>
+        <h1 className="text-3xl font-bold text-zinc-100 mb-2 tracking-tight">Databases</h1>
         <p className="text-zinc-500 text-sm">
-          A practical series on object models, design rules, and the architecture
-          choices that keep systems easy to extend and hard to break.
+          A guided series on persistence, relational modeling, isolation, and scaling, with
+          completion ticks that carry across the whole module.
         </p>
       </header>
 
@@ -18,12 +16,12 @@ export default function LldIndexPage() {
           <div className="flex items-center gap-3 mb-6">
             <div className="h-px bg-zinc-800 flex-grow" />
             <h2 className="text-amber-500 uppercase tracking-widest text-xs font-semibold">
-              Available Tracks
+              Available Track
             </h2>
             <div className="h-px bg-zinc-800 flex-grow" />
           </div>
 
-          <LldOverview />
+          <DatabaseOverview href="/databases/whydb" ctaLabel="Start with Why Databases Exist" />
         </section>
       </main>
     </div>

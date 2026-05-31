@@ -3,6 +3,7 @@ import { PgLiteProvider } from "@/components/lab/PgLiteProvider";
 import { Navbar } from "@/components/ui/Navbar";
 import { Footer } from "@/components/ui/Footer"; 
 import { Analytics } from "@vercel/analytics/next";
+import { AppProviders } from "@/components/providers/AppProviders";
 export const metadata = {
   title: "System Design Lab",
   description: "Interactive system design and database internals",
@@ -17,13 +18,14 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-[#1a1a1a] text-gray-200 antialiased selection:bg-amber-500/30 selection:text-amber-200">
         <PgLiteProvider>
-          {/* Your top navigation will go here later */}
-          <Navbar/>
-          <main className="flex-grow w-full">
-            {children}
-          </main>
-          <Footer />
-          <Analytics />
+          <AppProviders>
+            <Navbar />
+            <main className="flex-grow w-full">
+              {children}
+            </main>
+            <Footer />
+            <Analytics />
+          </AppProviders>
         </PgLiteProvider>
       </body>
     </html>

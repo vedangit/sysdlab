@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useCourseProgress } from "@/components/providers/CourseProgressProvider";
 
 type MemoryRow = {
   address: string;
@@ -536,6 +537,11 @@ String name = (String) cache.get("user:1");`,
   },
 };
 
+type OopEngineLabProps = {
+  lab: LabId;
+  lessonId: string;
+};
+
 const toneClass = {
   neutral: "border-zinc-800 text-zinc-400",
   good: "border-emerald-500/30 text-emerald-300",
@@ -543,8 +549,9 @@ const toneClass = {
   warn: "border-amber-500/30 text-amber-300",
 };
 
-export function OopEngineLab({ lab }: { lab: LabId }) {
+export function OopEngineLab({ lab, lessonId }: OopEngineLabProps) {
   const config = labs[lab];
+  const { recordLabResult } = useCourseProgress();
   const [code, setCode] = useState(config.defaultCode);
   const [result, setResult] = useState<LabResult>({
     status: "idle",
@@ -569,7 +576,11 @@ export function OopEngineLab({ lab }: { lab: LabId }) {
         </div>
         <button
           type="button"
-          onClick={() => setResult(config.run(code))}
+          onClick={() => {
+            const next = config.run(code);
+            setResult(next);
+            recordLabResult("lld", lessonId, lab, next.status);
+          }}
           className="w-full border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs uppercase tracking-wider text-amber-300 transition-colors hover:bg-amber-500/20 md:w-auto"
         >
           Run Engine Check

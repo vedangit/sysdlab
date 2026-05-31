@@ -16,10 +16,10 @@ If a child class throws on a base method, the contract was too broad or the hier
 
 Split read and write contracts so `ReadOnlyReplica` does not inherit an operation it cannot honor.
 
-<DesignPrinciplesLab lab="lsp" />
+<DesignPrinciplesLab lab="lsp" lessonId="/lld/design-principles/robust-contracts" />
 
 ## Lab 2.2: Decoupling Hardcoded Adapters
 
 Inject `IDatabaseAdapter` into `AnalyticsDashboard`, then test it with a thin mock instead of a live `PostgreSQLClient`.
 
-<DesignPrinciplesLab lab="dip" />
+<DesignPrinciplesLab lab="dip" lessonId="/lld/design-principles/robust-contracts" />

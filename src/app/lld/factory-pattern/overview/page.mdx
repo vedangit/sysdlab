@@ -1,0 +1,58 @@
+import { FactoryPatternLab } from "@/components/lab/factory-pattern/FactoryPatternLab";
+
+# Factory Design Pattern
+
+The factory pattern exists for one practical reason: object creation should not leak into every client that uses the object.
+
+When the same concept has many concrete variants — `Car`, `Truck`, `Bike`, or future additions — direct `new` calls make the caller responsible for too much knowledge. As soon as constructor arguments change, the ripple spreads across the codebase.
+
+## The Core Problem
+
+A direct constructor call hardcodes both **what** is being created and **how** it is created.
+
+- If the constructor changes, all call sites must be updated.
+- If the number of variants grows, client code starts collecting `if/else` ladders and `switch` statements.
+- If creation needs setup data, every caller now has to understand that setup.
+
+That means the caller is doing two jobs:
+
+1. deciding *which* object to use, and  
+2. figuring out *how* to build it.
+
+The factory pattern splits those responsibilities.
+
+## The Solution
+
+Encapsulate object creation in a factory class or factory method. The client asks for a vehicle by type, and the factory decides which concrete class to return.
+
+```text
+[Client] -> [Factory] -> [Concrete Vehicle]
+```
+
+The client now depends on the `Vehicle` interface, not on `Car` or `Truck`. That keeps the usage code stable even when constructors change.
+
+## Why It Helps
+
+- **Decoupling:** client code stops knowing concrete constructor details.
+- **SRP:** the factory owns creation; the client owns usage.
+- **OCP:** new variants can be added with less client churn.
+
+## When to Skip It
+
+If you only have one concrete type and no real selection logic, a factory is unnecessary ceremony. Use it when the system truly has a **family of variants** that share a common interface.
+
+## Lesson Flow
+
+### 1. Centralizing Creation Logic
+
+Refactor a client that still uses direct `new Car()` / `new Truck()` calls. The factory should own the variant selection.
+
+### 2. The Nightmare Refactor
+
+See how a constructor change ripples through three services when creation is scattered, then compare that with the factory-backed version where the token is passed once.
+
+### 3. Dynamic Registration
+
+Replace a rigid `switch` with a registry-backed factory so new implementations can be added without editing the factory body.
+
+<FactoryPatternLab lessonId="/lld/factory-pattern/overview" />
