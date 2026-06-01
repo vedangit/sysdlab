@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSupabaseAuth } from "@/components/providers/SupabaseAuthProvider";
+import { useAuthModal } from "@/components/providers/AuthModalProvider";
 
 export function ProfileMenu() {
-  const { session, isConfigured, isReady, signInWithGoogle, signOut } = useSupabaseAuth();
+  const { session, isConfigured, isReady, signOut } = useSupabaseAuth();
+  const { openOptional } = useAuthModal();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -56,11 +58,11 @@ export function ProfileMenu() {
     return (
       <button
         type="button"
-        onClick={signInWithGoogle}
-        aria-label="Sign in with Google"
+        onClick={openOptional}
+        aria-label="Open sign in dialog"
         className="border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] uppercase tracking-wider text-amber-300 transition-colors hover:bg-amber-500/20"
       >
-        Sign in with Google
+        Sign in
       </button>
     );
   }

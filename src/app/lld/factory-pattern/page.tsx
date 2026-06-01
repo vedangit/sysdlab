@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { courseCatalog } from "@/lib/course-catalog";
 
-const lesson = courseCatalog.lld.tracks.find((track) => track.id === "factory-pattern")?.lessons[0];
+const lessons =
+  courseCatalog.lld.tracks.find((track) => track.id === "factory-pattern")?.lessons ?? [];
 
 export default function FactoryPatternIndexPage() {
-  if (!lesson) return null;
+  if (lessons.length === 0) return null;
+
+  const labCount = lessons.reduce((total, lesson) => total + lesson.labs.length, 0);
 
   return (
     <div className="not-prose">
@@ -15,7 +18,7 @@ export default function FactoryPatternIndexPage() {
         <div className="p-6 md:p-8">
           <div className="mb-4 inline-flex items-center gap-2 border border-emerald-500/20 bg-emerald-500/5 px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-emerald-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            One lesson, three creation labs
+            Two lessons, five creation labs
           </div>
           <h1 className="m-0 max-w-3xl text-3xl font-bold tracking-tight text-zinc-100 md:text-4xl">
             Factory Design Pattern
@@ -27,12 +30,12 @@ export default function FactoryPatternIndexPage() {
 
           <div className="mt-6 grid grid-cols-1 gap-3 border-t border-zinc-800 pt-5 font-mono text-xs text-zinc-500 sm:grid-cols-3">
             <div>
-              <span className="block text-zinc-300">03 labs</span>
-              Centralization, refactor pressure, registry growth
+              <span className="block text-zinc-300">{String(labCount).padStart(2, "0")} labs</span>
+              Factory method and abstract factory exercises
             </div>
             <div>
-              <span className="block text-zinc-300">01 lesson</span>
-              Single focused factory overview
+              <span className="block text-zinc-300">{String(lessons.length).padStart(2, "0")} lessons</span>
+              Creation control from simple to family-based
             </div>
             <div>
               <span className="block text-zinc-300">Track 04</span>
@@ -50,34 +53,39 @@ export default function FactoryPatternIndexPage() {
         <div className="h-px flex-1 bg-zinc-800" />
       </section>
 
-      <Link
-        href={lesson.href}
-        className="group block border border-zinc-800 bg-[#151515] p-5 text-zinc-300 transition-colors hover:border-amber-500/50"
-      >
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-zinc-600 group-hover:text-amber-500/70">
-              Lesson 01
+      <div className="grid gap-4">
+        {lessons.map((lesson) => (
+          <Link
+            key={lesson.href}
+            href={lesson.href}
+            className="group block border border-zinc-800 bg-[#151515] p-5 text-zinc-300 transition-colors hover:border-amber-500/50"
+          >
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-zinc-600 group-hover:text-amber-500/70">
+                  Lesson {lesson.order.toString().padStart(2, "0")}
+                </div>
+                <h2 className="m-0 text-lg font-semibold text-zinc-100 transition-colors group-hover:text-amber-400">
+                  {lesson.title}
+                </h2>
+                <p className="m-0 mt-3 max-w-2xl text-sm leading-6 text-zinc-500">
+                  {lesson.summary}
+                </p>
+              </div>
+              <span className="shrink-0 border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-500 group-hover:border-amber-500/30 group-hover:text-amber-400">
+                Open Lab
+              </span>
             </div>
-            <h2 className="m-0 text-lg font-semibold text-zinc-100 transition-colors group-hover:text-amber-400">
-              {lesson.title}
-            </h2>
-            <p className="m-0 mt-3 max-w-2xl text-sm leading-6 text-zinc-500">
-              {lesson.summary}
-            </p>
-          </div>
-          <span className="shrink-0 border border-zinc-800 bg-zinc-950 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-500 group-hover:border-amber-500/30 group-hover:text-amber-400">
-            Open Lab
-          </span>
-        </div>
-        <div className="mt-5 flex flex-wrap gap-2">
-          {lesson.labs.map((tag) => (
-            <span key={tag} className="font-mono text-xs text-zinc-500">
-              #{tag}
-            </span>
-          ))}
-        </div>
-      </Link>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {lesson.labs.map((tag) => (
+                <span key={tag} className="font-mono text-xs text-zinc-500">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

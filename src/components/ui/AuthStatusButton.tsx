@@ -1,9 +1,11 @@
 "use client";
 
 import { useSupabaseAuth } from "@/components/providers/SupabaseAuthProvider";
+import { useAuthModal } from "@/components/providers/AuthModalProvider";
 
 export function AuthStatusButton() {
-  const { session, isConfigured, isReady, signInWithGoogle, signOut } = useSupabaseAuth();
+  const { session, isConfigured, isReady, signOut } = useSupabaseAuth();
+  const { openOptional } = useAuthModal();
 
   if (!isConfigured) {
     return (
@@ -25,10 +27,10 @@ export function AuthStatusButton() {
     return (
       <button
         type="button"
-        onClick={signInWithGoogle}
+        onClick={openOptional}
         className="border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] uppercase tracking-wider text-amber-300 transition-colors hover:bg-amber-500/20"
       >
-        Sign in with Google
+        Sign in
       </button>
     );
   }

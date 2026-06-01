@@ -1,0 +1,64 @@
+import { AbstractFactoryLab } from "@/components/lab/factory-pattern/AbstractFactoryLab";
+
+# Abstract Factory Pattern
+
+Abstract Factory is the next step after a single factory starts to feel too heavy.
+
+The basic factory method pattern still centralizes creation, but one class can still become a dumping ground if it is asked to create many **families** of related objects. For example, a theme system might need a `WindowsButton` and `WindowsCheckbox`, or a `MacButton` and `MacCheckbox`. If all of that logic lives in one `ThemeFactory`, the factory grows into a modification hotspot.
+
+## The Problem
+
+The pain point is not just “many variants.” It is many **related** variants that must stay compatible with one another.
+
+- A single factory starts carrying branching logic for every family.
+- Adding a new family means editing the same factory again.
+- Product combinations can drift if the caller picks unrelated concrete classes.
+
+That creates a structure that works, but does not scale gracefully.
+
+## The Solution
+
+Abstract Factory introduces a **factory of factories**.
+
+Instead of one massive class creating every concrete product directly, you split the creation logic into family-specific factories:
+
+- `WindowsFactory`
+- `MacFactory`
+- `LinuxFactory`
+- and so on
+
+Each factory implements the same abstract contract, so the client depends on a single interface like `UIFactory`, not on the concrete products themselves.
+
+```text
+[Client] -> [UIFactory] -> [WindowsFactory | MacFactory | ...] -> [Button + Checkbox]
+```
+
+The caller asks for a family, and the active concrete factory returns a compatible set of products.
+
+## Why It Helps
+
+- **Decoupling:** the client stops knowing which concrete button or checkbox class exists.
+- **OCP:** adding a new family means adding a new concrete factory, not rewriting all client code.
+- **Consistency:** related objects are built together, so the family stays visually and behaviorally aligned.
+
+## Interview Reality Check
+
+Abstract Factory is powerful, but it is not always the first thing you should reach for in a 45-minute interview.
+
+If the problem only needs one selection point, a standard factory method is often clearer and faster to explain. If the problem has multiple product families that must remain compatible, then Abstract Factory is the cleaner architecture.
+
+## Lesson Flow
+
+### 1. Breaking the Single Factory
+
+Start with a monolithic `ThemeFactory` and add Linux support directly. The change works, but the original factory has to be edited, which exposes the OCP problem.
+
+### 2. Refactoring to Abstract Factory
+
+Split the theme system into a `UIFactory` contract and concrete family factories such as `WindowsFactory` and `MacFactory`. The client now asks for a family, not a concrete widget.
+
+### 3. Switching Themes Cleanly
+
+Use the interactive preview to toggle between Windows and Mac families and see how the output changes while the client API stays stable.
+
+<AbstractFactoryLab lessonId="/lld/factory-pattern/abstract-factory" />

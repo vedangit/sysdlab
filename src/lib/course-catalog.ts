@@ -24,6 +24,8 @@ export type LabId =
   | "factory-centralization"
   | "factory-nightmare"
   | "factory-registry"
+  | "abstract-factory-monolith"
+  | "abstract-factory-refactor"
   | "srp"
   | "ocp"
   | "lsp"
@@ -143,6 +145,15 @@ const factoryPatternLessons: LessonMeta[] = [
     order: 1,
     labs: ["factory-centralization", "factory-nightmare", "factory-registry"],
   },
+  {
+    id: "/lld/factory-pattern/abstract-factory",
+    href: "/lld/factory-pattern/abstract-factory",
+    title: "Abstract Factory Pattern",
+    summary:
+      "Split a bloated factory into family-specific factories so related products stay consistent while client code stays closed for modification.",
+    order: 2,
+    labs: ["abstract-factory-monolith", "abstract-factory-refactor"],
+  },
 ];
 
 const databaseLessons: LessonMeta[] = [
@@ -217,7 +228,7 @@ export const courseCatalog: Record<CourseId, CourseMeta> = {
         href: "/lld/factory-pattern",
         title: "Factory Design Pattern",
         summary:
-          "Vehicle creation, constructor drift, and a registry-driven factory that keeps client code stable.",
+          "Factory Method, Abstract Factory, and registry-backed creation patterns that keep client code stable.",
         badge: "Interactive Series",
         lessons: factoryPatternLessons,
       },

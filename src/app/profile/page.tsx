@@ -4,9 +4,11 @@ import Link from "next/link";
 import { courseCatalog } from "@/lib/course-catalog";
 import { useCourseProgress } from "@/components/providers/CourseProgressProvider";
 import { useSupabaseAuth } from "@/components/providers/SupabaseAuthProvider";
+import { useAuthModal } from "@/components/providers/AuthModalProvider";
 
 export default function ProfilePage() {
-  const { session, isConfigured, isReady, signInWithGoogle, signOut } = useSupabaseAuth();
+  const { session, isConfigured, isReady, signOut } = useSupabaseAuth();
+  const { openOptional } = useAuthModal();
   const { completedLessonCount, totalLessonCount, isLessonComplete } = useCourseProgress();
 
   const email = session?.user?.email ?? "";
@@ -59,7 +61,7 @@ export default function ProfilePage() {
                 </h2>
                 <p className="mt-1 text-sm text-zinc-500">
                   {isSignedIn
-                    ? `Signed in with ${session?.user?.app_metadata?.provider ?? "Google"}`
+                    ? `Signed in with ${session?.user?.app_metadata?.provider ?? "Supabase auth"}`
                     : "Your progress is stored locally until you sign in."}
                 </p>
               </div>
@@ -73,10 +75,10 @@ export default function ProfilePage() {
               ) : !isSignedIn ? (
                 <button
                   type="button"
-                  onClick={signInWithGoogle}
+                  onClick={openOptional}
                   className="border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs uppercase tracking-wider text-amber-300 transition-colors hover:bg-amber-500/20"
                 >
-                  Sign in with Google
+                  Sign in
                 </button>
               ) : (
                 <button

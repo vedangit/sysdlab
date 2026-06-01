@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/ui/Sidebar";
+import { LessonAccessGate } from "@/components/ui/LessonAccessGate";
 import { TableOfContents } from "@/components/ui/TableOfContents";
 
 export default function DatabasesLayout({
@@ -15,7 +16,7 @@ export default function DatabasesLayout({
 
       {/* Center Column: The MDX Prose */}
       <article className="flex-1 min-w-0 py-10 max-w-3xl mx-auto">
-        {children}
+        <LessonAccessGate courseId="databases">{children}</LessonAccessGate>
       </article>
 
       {/* Right Column: Page Outline */}

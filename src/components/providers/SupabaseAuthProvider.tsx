@@ -1,14 +1,17 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
+import { getAuthRedirectUrl } from "@/lib/auth-redirect";
 
 type SupabaseAuthContextValue = {
   client: SupabaseClient | null;
   session: Session | null;
   isReady: boolean;
   isConfigured: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string) => Promise<{ ok: boolean; message?: string }>;
+  signInWithGitHub: () => Promise<{ ok: boolean; message?: string }>;
+  signInWithGoogle: () => Promise<{ ok: boolean; message?: string }>;
   signOut: () => Promise<void>;
 };
 
@@ -17,7 +20,9 @@ const SupabaseAuthContext = createContext<SupabaseAuthContextValue>({
   session: null,
   isReady: false,
   isConfigured: false,
-  signInWithGoogle: async () => {},
+  signInWithEmail: async () => ({ ok: false }),
+  signInWithGitHub: async () => ({ ok: false }),
+  signInWithGoogle: async () => ({ ok: false }),
   signOut: async () => {},
 });
 
@@ -66,28 +71,59 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     };
   }, [client]);
 
+  const signInWithOAuth = useCallback(
+    async (provider: "github" | "google") => {
+      if (!client) return { ok: false, message: "Supabase is not configured." };
+
+      const redirectTo = getAuthRedirectUrl();
+      const { error } = await client.auth.signInWithOAuth({
+        provider,
+        options: redirectTo ? { redirectTo } : undefined,
+      });
+
+      if (error) {
+        return { ok: false, message: error.message };
+      }
+
+      return { ok: true };
+    },
+    [client],
+  );
+
   const value = useMemo<SupabaseAuthContextValue>(() => {
     return {
       client,
       session,
       isReady,
       isConfigured: Boolean(client),
-      signInWithGoogle: async () => {
-        if (!client) return;
+      signInWithEmail: async (email: string) => {
+        if (!client) return { ok: false, message: "Supabase is not configured." };
 
-        const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+        const trimmedEmail = email.trim();
+        if (!trimmedEmail) {
+          return { ok: false, message: "Enter an email address." };
+        }
 
-        await client.auth.signInWithOAuth({
-          provider: "google",
-          options: redirectTo ? { redirectTo } : undefined,
+        const redirectTo = getAuthRedirectUrl();
+        const { error } = await client.auth.signInWithOtp({
+          email: trimmedEmail,
+          options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
         });
+
+        if (error) {
+          return { ok: false, message: error.message };
+        }
+
+        return { ok: true };
       },
+      signInWithGitHub: async () => signInWithOAuth("github"),
+      signInWithGoogle: async () => signInWithOAuth("google"),
       signOut: async () => {
         if (!client) return;
         await client.auth.signOut();
       },
     };
-  }, [client, session, isReady]);
+  }, [client, session, isReady, signInWithOAuth]);
 
   return <SupabaseAuthContext.Provider value={value}>{children}</SupabaseAuthContext.Provider>;
 }
