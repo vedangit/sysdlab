@@ -18,3 +18,12 @@ To bridge the gap between theory and practice, these notes feature a built-in, c
 * **Factual & Mechanical:** The tutorials focus on how systems actually operate under the hood, prioritizing technical depth and exact mechanics over high-level, abstract analogies.
 * **Active Practice:** Complex concepts are paired directly with an interactive lab. If the notes explain a database race condition, the embedded terminal allows you to manually trigger that exact anomaly.
 * **Zero-Friction Execution:** There are no backends to configure, no cloud infrastructure to provision, and no sign-ups. The execution engine runs entirely within local browser memory.
+
+## Analytics
+
+The site can also send user activity to PostHog for page views, lesson completion, auth prompts, and feedback interest.
+
+Set these environment variables when you want analytics enabled:
+
+* `NEXT_PUBLIC_POSTHOG_KEY`
+* `NEXT_PUBLIC_POSTHOG_HOST` (optional, defaults to PostHog Cloud)

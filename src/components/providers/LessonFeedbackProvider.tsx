@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { courseCatalog } from "@/lib/course-catalog";
 import { useCourseProgress } from "@/components/providers/CourseProgressProvider";
 import { useSupabaseAuth } from "@/components/providers/SupabaseAuthProvider";
+import { capturePostHog } from "@/lib/posthog";
 import {
   readLessonFeedbackInterests,
   readLessonFeedbackPromptState,
@@ -65,6 +66,10 @@ export function LessonFeedbackProvider({ children }: { children: React.ReactNode
 
   const openInterestPrompt = useCallback(
     (feedback?: Partial<FeedbackState>) => {
+      capturePostHog("feedback_prompt_opened", {
+        source: feedback?.source ?? "footer",
+        lesson_href: feedback?.lessonHref ?? null,
+      });
       setCurrentFeedback({
         lessonHref: feedback?.lessonHref ?? null,
         lessonTitle: feedback?.lessonTitle ?? "the platform",
@@ -177,6 +182,11 @@ export function LessonFeedbackProvider({ children }: { children: React.ReactNode
       userId: session?.user?.id ?? null,
       createdAt: new Date().toISOString(),
     });
+    capturePostHog("feedback_interest_submitted", {
+      source: currentFeedback.source,
+      lesson_href: currentFeedback.lessonHref,
+      logged_in: true,
+    });
     setStatus("Thanks — you’re on the updates list.");
     setTimeout(close, 900);
   };
@@ -198,6 +208,11 @@ export function LessonFeedbackProvider({ children }: { children: React.ReactNode
       email: trimmed,
       userId: null,
       createdAt: new Date().toISOString(),
+    });
+    capturePostHog("feedback_interest_submitted", {
+      source: currentFeedback.source,
+      lesson_href: currentFeedback.lessonHref,
+      logged_in: false,
     });
     setStatus("Thanks — you’re on the updates list.");
     setTimeout(close, 900);

@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
 import { getAuthRedirectUrl } from "@/lib/auth-redirect";
+import { capturePostHog, identifyPostHog, resetPostHog } from "@/lib/posthog";
 
 type SupabaseAuthContextValue = {
   client: SupabaseClient | null;
@@ -63,6 +64,21 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     const { data: subscription } = client.auth.onAuthStateChange((_event, nextSession) => {
       if (!isMounted) return;
       setSession(nextSession);
+
+      if (_event === "SIGNED_IN" && nextSession?.user) {
+        identifyPostHog(nextSession.user.id, {
+          email: nextSession.user.email ?? undefined,
+          provider: nextSession.user.app_metadata?.provider ?? undefined,
+        });
+        capturePostHog("auth_signed_in", {
+          provider: nextSession.user.app_metadata?.provider ?? "unknown",
+        });
+      }
+
+      if (_event === "SIGNED_OUT") {
+        capturePostHog("auth_signed_out");
+        resetPostHog();
+      }
     });
 
     return () => {
@@ -76,6 +92,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (!client) return { ok: false, message: "Supabase is not configured." };
 
       const redirectTo = getAuthRedirectUrl();
+      capturePostHog("auth_oauth_started", { provider });
       const { error } = await client.auth.signInWithOAuth({
         provider,
         options: redirectTo ? { redirectTo } : undefined,
@@ -105,6 +122,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         }
 
         const redirectTo = getAuthRedirectUrl();
+        capturePostHog("auth_magic_link_requested", { email_domain: trimmedEmail.split("@")[1] ?? "" });
         const { error } = await client.auth.signInWithOtp({
           email: trimmedEmail,
           options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,

@@ -4,6 +4,7 @@ import { createContext, useContext, useMemo, useState, type FormEvent, type Reac
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSupabaseAuth } from "@/components/providers/SupabaseAuthProvider";
+import { capturePostHog } from "@/lib/posthog";
 
 type AuthModalMode = "optional" | "required";
 
@@ -222,14 +223,17 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
       openOptional: () => {
         setMode("optional");
         setIsOpen(true);
+        capturePostHog("auth_modal_opened", { mode: "optional" });
       },
       openRequired: () => {
         setMode("required");
         setIsOpen(true);
+        capturePostHog("auth_modal_opened", { mode: "required" });
       },
       close: () => {
         setIsOpen(false);
         setMode("optional");
+        capturePostHog("auth_modal_closed");
       },
     }),
     [isOpen, mode],

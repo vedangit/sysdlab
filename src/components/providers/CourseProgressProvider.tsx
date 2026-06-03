@@ -14,6 +14,7 @@ import {
   type LessonProgressRecord,
 } from "@/lib/course-progress";
 import { useSupabaseAuth } from "@/components/providers/SupabaseAuthProvider";
+import { capturePostHog } from "@/lib/posthog";
 
 type CourseProgressContextValue = {
   progress: CourseProgressState;
@@ -174,15 +175,18 @@ export function CourseProgressProvider({ children }: { children: React.ReactNode
     (courseId: CourseId, lessonId: string, labId: LabId, status: LabStatus) => {
       const lesson = getLesson(courseId, lessonId);
       if (!lesson) return;
+      const course = courseCatalog[courseId];
+
+      const existing = getLessonRecord(progress, courseId, lessonId);
 
       setProgress((current) => {
         const next = cloneProgressState(current);
         next.courses[courseId] = next.courses[courseId] ?? {};
-        const existing = getLessonRecord(next, courseId, lessonId);
+        const record = getLessonRecord(next, courseId, lessonId);
         const updatedRecord: LessonProgressRecord = {
-          ...existing,
+          ...record,
           labResults: {
-            ...existing.labResults,
+            ...record.labResults,
             [labId]: status,
           },
           updatedAt: Date.now(),
@@ -191,21 +195,45 @@ export function CourseProgressProvider({ children }: { children: React.ReactNode
         next.courses[courseId]![lessonId] = updatedRecord;
         return next;
       });
+
+      if (!existing.completed) {
+        const completedRecord = {
+          ...existing,
+          labResults: {
+            ...existing.labResults,
+            [labId]: status,
+          },
+        };
+        const nextCompleted = lessonIsCompleted(completedRecord, lesson.labs);
+        if (nextCompleted) {
+          capturePostHog("lesson_completed", {
+            course_id: courseId,
+            course_title: course.title,
+            lesson_id: lessonId,
+            lesson_title: lesson.title,
+            lab_id: labId,
+            completion_source: "lab_result",
+          });
+        }
+      }
     },
-    [],
+    [progress],
   );
 
   const toggleLesson = useCallback((courseId: CourseId, lessonId: string) => {
     const lesson = getLesson(courseId, lessonId);
     if (!lesson) return;
+    const course = courseCatalog[courseId];
+
+    const existing = getLessonRecord(progress, courseId, lessonId);
 
     setProgress((current) => {
       const next = cloneProgressState(current);
       next.courses[courseId] = next.courses[courseId] ?? {};
-      const existing = getLessonRecord(next, courseId, lessonId);
-      const manualCompleted = !existing.manualCompleted;
+      const record = getLessonRecord(next, courseId, lessonId);
+      const manualCompleted = !record.manualCompleted;
       const updatedRecord: LessonProgressRecord = {
-        ...existing,
+        ...record,
         manualCompleted,
         updatedAt: Date.now(),
       };
@@ -213,7 +241,24 @@ export function CourseProgressProvider({ children }: { children: React.ReactNode
       next.courses[courseId]![lessonId] = updatedRecord;
       return next;
     });
-  }, []);
+
+    if (!existing.completed) {
+      const toggledRecord: LessonProgressRecord = {
+        ...existing,
+        manualCompleted: !existing.manualCompleted,
+      };
+      toggledRecord.completed = lessonIsCompleted(toggledRecord, lesson.labs);
+      if (toggledRecord.completed) {
+        capturePostHog("lesson_completed", {
+          course_id: courseId,
+          course_title: course.title,
+          lesson_id: lessonId,
+          lesson_title: lesson.title,
+          completion_source: "manual_toggle",
+        });
+      }
+    }
+  }, [progress]);
 
   const value = useMemo<CourseProgressContextValue>(() => {
     const lessonRecord = (courseId: CourseId, lessonId: string) =>
