@@ -1,0 +1,50 @@
+import { OopEngineLab } from "@/components/lab/oop/OopEngineLab";
+
+# Objects, State & Identity
+
+Before constructors, inheritance, or interfaces make sense, you need the object model in your head. In OOP, a class is a blueprint, but the real unit of work is the object: a live instance with its own identity, state, and behavior.
+
+## The Four Pillars
+
+These are the four ideas that make OOP feel like a real model instead of a syntax feature:
+
+- **Encapsulation** keeps state behind a boundary.
+- **Abstraction** exposes only the useful contract.
+- **Inheritance** lets one type reuse and specialize another.
+- **Polymorphism** lets the same call behave differently based on the real object.
+
+If those four ideas are not clear, the rest of OOP feels random. This track starts here on purpose.
+
+## Class vs. Object
+
+A class describes what instances can look like and what they can do. An object is one concrete instance created from that description.
+
+That distinction matters because the class itself does not hold your personal data. The object does. If two variables point at the same object, they are just two references to one <u>[heap allocation](https://www.geeksforgeeks.org/dsa/stack-vs-heap-memory-allocation/)</u>.
+
+## Identity vs. Equality
+
+Two objects can contain the same data without being the same object. That is the difference between identity and equality:
+
+- **Identity** asks, "Are these references pointing to the same instance?"
+- **Equality** asks, "Do these instances represent the same value?"
+
+In Java-style OOP, `==` checks reference identity, while `equals()` usually checks value semantics once it is implemented properly. That is why copying a reference is not the same as copying an object.
+
+## State Belongs to the Instance
+
+Mutable state should usually belong to the object, not the class. If a class stores user-specific or request-specific data in a `static` field, every instance will share one changing value.
+
+That is how accidental cross-user leaks happen: one object's mutation changes another object's view of the world because the state was placed at the wrong level.
+
+## Behavior Lives With State
+
+Objects are not just bags of fields. They are the combination of state and behavior. Methods exist so state transitions can happen through a defined boundary instead of from random external code.
+
+Once this is clear, constructors, `this`, deep copies, dispatch, and abstraction all become easier to reason about.
+
+## Lab 1.1: Identity vs. Equality
+
+The code below starts with one variable aliasing another. Fix the object graph so each instance has its own identity, while value equality remains a separate check.
+
+<OopEngineLab lab="identity" lessonId="/lld/oop/object-model" />
+

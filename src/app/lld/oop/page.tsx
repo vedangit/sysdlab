@@ -17,13 +17,22 @@ export default function OopIndexPage() {
             Interactive runtime notes
           </div>
           <h1 className="m-0 max-w-3xl text-3xl font-bold tracking-tight text-zinc-100 md:text-4xl">
-            Object-Oriented Programming, from heap layout to type bounds
+            Object-Oriented Programming, from object identity to type bounds
           </h1>
           <p className="mt-5 max-w-2xl text-sm leading-7 text-zinc-400">
-            This series treats OOP as runtime architecture, not just syntax.
+            This series starts with the object model, then builds upward through
+            construction, dispatch, encapsulation, and type-safe reuse.
             Each lesson connects language constructs to memory allocation,
-            dispatch tables, visibility boundaries, and compile-time contracts.
+            runtime behavior, and compile-time contracts.
           </p>
+          <div className="mt-5 max-w-2xl border border-zinc-800 bg-zinc-950/70 p-4 text-sm leading-7 text-zinc-400">
+            <span className="block text-[10px] uppercase tracking-widest text-amber-500/80">
+              Study note
+            </span>
+            The labs use a pattern-based engine, not a real compiler. That is deliberate: the goal
+            is to train the design intuition and mental model first, then make the code look right
+            in the context of the lesson.
+          </div>
 
           <div className="mt-6 grid grid-cols-1 gap-3 border-t border-zinc-800 pt-5 font-mono text-xs text-zinc-500 sm:grid-cols-3">
             <div>
@@ -32,11 +41,11 @@ export default function OopIndexPage() {
             </div>
             <div>
               <span className="block text-zinc-300">{String(lessons.length).padStart(2, "0")} lessons</span>
-              Constructor to generics path
+              Identity to generics path
             </div>
             <div>
-              <span className="block text-zinc-300">Java model</span>
-              OOP mechanics, not trivia
+              <span className="block text-zinc-300">OOP mechanics</span>
+              From identity to generics
             </div>
           </div>
         </div>

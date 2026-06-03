@@ -9,6 +9,40 @@ type CourseSidebarProps = {
   courseId: CourseId;
 };
 
+const comingSoonByCourse: Record<
+  CourseId,
+  Array<{
+    title: string;
+    description: string;
+    lockLabel: string;
+  }>
+> = {
+  lld: [
+    {
+      title: "More Patterns",
+      description: "Adapter, Observer, Strategy, and the next wave of reusable design tools.",
+      lockLabel: "Locked",
+    },
+    {
+      title: "Interview Simulations",
+      description: "Timed design drills that ask you to defend trade-offs out loud.",
+      lockLabel: "Locked",
+    },
+  ],
+  databases: [
+    {
+      title: "NoSQL",
+      description: "Document, key-value, and distributed trade-offs once relational stops being enough.",
+      lockLabel: "Locked",
+    },
+    {
+      title: "Interview Questions",
+      description: "A locked practice track for database system design prompts.",
+      lockLabel: "Locked",
+    },
+  ],
+};
+
 export function CourseSidebar({ courseId }: CourseSidebarProps) {
   const pathname = usePathname();
   const { completedLessonCount, totalLessonCount, isLessonComplete, toggleLesson } =
@@ -100,6 +134,30 @@ export function CourseSidebar({ courseId }: CourseSidebarProps) {
             );
           })}
         </nav>
+
+        <div className="mt-8 border border-zinc-800 bg-[#101010] p-4">
+          <div className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+            <span className="text-zinc-400">🔒</span>
+            Coming Soon
+          </div>
+          <div className="space-y-3">
+            {comingSoonByCourse[courseId].map((item) => (
+              <div key={item.title} className="border border-zinc-800/80 bg-zinc-950/70 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate font-mono text-sm text-zinc-200">{item.title}</div>
+                    <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-zinc-500">
+                      {item.description}
+                    </p>
+                  </div>
+                  <span className="shrink-0 border border-zinc-800 px-2 py-1 font-mono text-[9px] uppercase tracking-widest text-zinc-500">
+                    {item.lockLabel}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </aside>
   );

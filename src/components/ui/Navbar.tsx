@@ -11,16 +11,13 @@ export const Navbar = () => {
     { href: "/", label: "Index" },
     { href: "/lld", label: "LLD" },
     { href: "/databases", label: "Databases" },
-    { href: "/profile", label: "Profile" },
   ];
 
   const currentLabel = pathname.startsWith("/lld")
     ? "LLD"
     : pathname.startsWith("/databases")
       ? "Databases"
-      : pathname.startsWith("/profile")
-        ? "Profile"
-        : "Index";
+      : "Index";
 
   return (
     <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-zinc-800 bg-[#111111] px-6 py-4 font-mono text-sm md:px-16">
@@ -59,15 +56,6 @@ export const Navbar = () => {
             );
           })}
         </div>
-
-        <a
-          href="https://github.com/"
-          target="_blank"
-          rel="noreferrer"
-          className="hidden rounded-sm border border-transparent px-2 py-1 text-[11px] uppercase tracking-wider transition-colors hover:border-zinc-700 hover:text-zinc-300 sm:inline"
-        >
-          Source
-        </a>
 
         <ProfileMenu />
       </div>

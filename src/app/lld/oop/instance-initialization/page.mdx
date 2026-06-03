@@ -1,14 +1,14 @@
 import { OopEngineLab } from "@/components/lab/oop/OopEngineLab";
 
-# Instance Initialization & The Current Reference Lifecycle
+# Construction & `this`
 
-An object-oriented program is a graph of heap allocations, not a set of detached code blocks. A class describes the shape of an object: its fields, method table, visibility rules, and construction paths. Instantiation turns that description into a concrete heap segment and returns a reference that can be passed around the program.
+Once you understand that objects have identity and state, the next question is how they are born safely. Construction is where an object moves from a description into a valid runtime instance, and `this` is the pointer that lets the object refer to itself during that process.
 
 ## Blueprint vs. Instance Allocation
 
 A class is the blueprint. It defines field order, type expectations, constructor signatures, and method dispatch metadata. It does not hold per-object state by itself.
 
-An object is the allocated instance. When `new Movie(...)` runs, the runtime reserves space for the object header, field slots, and hidden metadata such as a class pointer or vtable pointer. The returned variable does not contain the full object; it contains an address-like reference to that heap allocation.
+An object is the allocated instance. When `new Movie(...)` runs, the runtime reserves space for the object header, field slots, and hidden metadata such as a class pointer or <u>[vtable pointer](https://en.wikipedia.org/wiki/Virtual_method_table)</u>. The returned variable does not contain the full object; it contains an address-like reference to that heap allocation.
 
 For primitive fields, default initialization writes type-specific zero values: `0`, `0.0`, `false`, or equivalent. For reference fields, default initialization writes `null`, because the runtime has no nested object address until one is explicitly assigned.
 
@@ -22,7 +22,7 @@ Constructors are controlled entry points into valid object state.
 
 **Copy constructors** define how identity and ownership should move from one object to another. A shallow copy duplicates field values exactly, including nested reference addresses. A deep copy recursively allocates new nested objects so mutation through the copy cannot corrupt the original.
 
-**Private constructors** move allocation authority away from external callers. This is the basis of singleton-style objects, where a static gatekeeper such as `getInstance()` decides when the object may be allocated and which reference all callers receive.
+**Private constructors** move allocation authority away from external callers. This is useful when you want a static gatekeeper such as `getInstance()` to decide when the object may be allocated and which reference all callers receive.
 
 ## The Current Object Pointer
 
@@ -44,13 +44,13 @@ It also enables constructor chaining and fluent APIs. Returning `this` returns t
 
 Static methods do not have `this`, because they bind to the class definition rather than a particular heap instance.
 
-## Lab 1.1: The Reference Memory Leak
+## Lab 2.1: The Reference Memory Leak
 
 This lab starts with a `Movie` object that owns a mutable nested `Cast` structure. The initial code aliases `copyMovie` to `originalMovie`, so both variables point to the same heap object. Run the engine first to see the corruption, then add a deep-copy constructor that duplicates the nested cast member array.
 
 <OopEngineLab lab="shallow-copy" lessonId="/lld/oop/instance-initialization" />
 
-## Lab 1.2: Constructing the Singleton Guard
+## Lab 2.2: Constructing the Singleton Guard
 
 The unsafe version of `ConfigRegistry` can allocate two objects when two threads observe `instance == null` at the same time. Secure it by hiding the constructor and implementing double-checked locking with a `volatile` static reference.
 

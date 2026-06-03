@@ -5,11 +5,14 @@ export type TrackId =
   | "design-principles"
   | "creational-patterns"
   | "factory-pattern"
+  | "builder-pattern"
   | "core";
 
 export type LessonId = string;
 
 export type LabId =
+  | "identity"
+  | "shared-state"
   | "shallow-copy"
   | "singleton"
   | "vtable"
@@ -26,6 +29,9 @@ export type LabId =
   | "factory-registry"
   | "abstract-factory-monolith"
   | "abstract-factory-refactor"
+  | "builder-telescoping"
+  | "builder-invariants"
+  | "builder-immutability"
   | "srp"
   | "ocp"
   | "lsp"
@@ -59,12 +65,21 @@ export type CourseMeta = {
 
 const oopLessons: LessonMeta[] = [
   {
+    id: "/lld/oop/object-model",
+    href: "/lld/oop/object-model",
+    title: "Objects, State & Identity",
+    summary:
+      "The object model, references, identity, value equality, and why mutable state belongs to instances instead of classes.",
+    order: 1,
+    labs: ["identity", "shared-state"],
+  },
+  {
     id: "/lld/oop/instance-initialization",
     href: "/lld/oop/instance-initialization",
-    title: "Instance Initialization",
+    title: "Construction & Ownership",
     summary:
-      "Object allocation, constructor paths, copy lifecycles, singleton guards, and the implicit current-object reference.",
-    order: 1,
+      "Constructors, `this`, copy lifecycles, private allocation paths, and the rules that keep objects valid as they are created.",
+    order: 2,
     labs: ["shallow-copy", "singleton"],
   },
   {
@@ -72,8 +87,8 @@ const oopLessons: LessonMeta[] = [
     href: "/lld/oop/runtime-dispatch",
     title: "Runtime Dispatch",
     summary:
-      "Overloading, overriding, vtable routing, inheritance topology, and structural relationships between classes.",
-    order: 2,
+      "Overloading, overriding, vtable routing, inheritance topology, and the way objects collaborate through relationships.",
+    order: 3,
     labs: ["vtable", "relationships"],
   },
   {
@@ -82,7 +97,7 @@ const oopLessons: LessonMeta[] = [
     title: "Encapsulation & Abstraction",
     summary:
       "Visibility boundaries, invariant protection, abstract classes, interfaces, and default-method conflict resolution.",
-    order: 3,
+    order: 4,
     labs: ["encapsulation", "interface-collision"],
   },
   {
@@ -91,7 +106,7 @@ const oopLessons: LessonMeta[] = [
     title: "Parameterized Polymorphism",
     summary:
       "Generics, type erasure, wildcard variance, and type-safe reusable containers.",
-    order: 4,
+    order: 5,
     labs: ["variance", "generic-cache"],
   },
 ];
@@ -153,6 +168,18 @@ const factoryPatternLessons: LessonMeta[] = [
       "Split a bloated factory into family-specific factories so related products stay consistent while client code stays closed for modification.",
     order: 2,
     labs: ["abstract-factory-monolith", "abstract-factory-refactor"],
+  },
+];
+
+const builderPatternLessons: LessonMeta[] = [
+  {
+    id: "/lld/builder-pattern/overview",
+    href: "/lld/builder-pattern/overview",
+    title: "Builder Pattern",
+    summary:
+      "Replace telescoping constructors with a fluent builder, validate state before build(), and lock down the resulting object as immutable.",
+    order: 1,
+    labs: ["builder-telescoping", "builder-invariants", "builder-immutability"],
   },
 ];
 
@@ -231,6 +258,15 @@ export const courseCatalog: Record<CourseId, CourseMeta> = {
           "Factory Method, Abstract Factory, and registry-backed creation patterns that keep client code stable.",
         badge: "Interactive Series",
         lessons: factoryPatternLessons,
+      },
+      {
+        id: "builder-pattern",
+        href: "/lld/builder-pattern",
+        title: "Builder Pattern",
+        summary:
+          "Telescoping constructors, fluent object construction, invariant checks, and immutable object materialization.",
+        badge: "Interactive Series",
+        lessons: builderPatternLessons,
       },
     ],
   },

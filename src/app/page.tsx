@@ -88,6 +88,26 @@ export default function Home() {
             <DatabaseOverview />
           </div>
         </section>
+
+        <section className="mb-12">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="h-px flex-grow bg-zinc-800" />
+            <h2 className="text-amber-500 uppercase tracking-widest text-xs font-semibold">
+              How to use this
+            </h2>
+            <div className="h-px flex-grow bg-zinc-800" />
+          </div>
+
+          <div className="border border-zinc-800 bg-[#151515] p-5">
+            <p className="text-sm leading-7 text-zinc-400">
+              This is the first version of the lab, so the course map will keep growing with more
+              lessons, more interactive exercises, and better interview-style drills. The easiest
+              way to study here is simple: pick one module, read the notes first, run the lab, and
+              tick the lesson only after you’ve understood the idea, not just the answer. Come back
+              later to compare how your thinking changes as the platform expands.
+            </p>
+          </div>
+        </section>
       </main>
     </div>
   );

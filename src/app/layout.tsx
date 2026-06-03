@@ -4,6 +4,7 @@ import { Navbar } from "@/components/ui/Navbar";
 import { Footer } from "@/components/ui/Footer"; 
 import { Analytics } from "@vercel/analytics/next";
 import { AppProviders } from "@/components/providers/AppProviders";
+import { LessonFeedbackProvider } from "@/components/providers/LessonFeedbackProvider";
 export const metadata = {
   title: "System Design Lab",
   description: "Interactive system design and database internals",
@@ -19,12 +20,14 @@ export default function RootLayout({
       <body className="bg-[#1a1a1a] text-gray-200 antialiased selection:bg-amber-500/30 selection:text-amber-200">
         <PgLiteProvider>
           <AppProviders>
-            <Navbar />
-            <main className="flex-grow w-full">
-              {children}
-            </main>
-            <Footer />
-            <Analytics />
+            <LessonFeedbackProvider>
+              <Navbar />
+              <main className="flex-grow w-full">
+                {children}
+              </main>
+              <Footer />
+              <Analytics />
+            </LessonFeedbackProvider>
           </AppProviders>
         </PgLiteProvider>
       </body>

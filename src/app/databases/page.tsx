@@ -1,4 +1,5 @@
 import { DatabaseOverview } from "@/components/ui/DatabaseOverview";
+import { ComingSoonCard } from "@/components/ui/ComingSoonCard";
 
 export default function DatabasesIndexPage() {
   return (
@@ -22,6 +23,31 @@ export default function DatabasesIndexPage() {
           </div>
 
           <DatabaseOverview href="/databases/whydb" ctaLabel="Start with Why Databases Exist" />
+        </section>
+
+        <section className="mb-12">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="h-px flex-grow bg-zinc-800" />
+            <h2 className="text-amber-500 uppercase tracking-widest text-xs font-semibold">
+              Coming Soon Track
+            </h2>
+            <div className="h-px flex-grow bg-zinc-800" />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <ComingSoonCard
+              title="NoSQL"
+              description="Document stores, key-value stores, and the trade-offs that show up once the relational model is no longer enough."
+              badges={["Mongo-style", "Key-Value", "Distributed"]}
+              lockLabel="Locked"
+            />
+            <ComingSoonCard
+              title="Interview Questions"
+              description="A curated set of database design prompts with a visible lock badge until the track is released."
+              badges={["Locked", "Practice", "Simulations"]}
+              lockLabel="🔒 Interview"
+            />
+          </div>
         </section>
       </main>
     </div>

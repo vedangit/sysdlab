@@ -1,0 +1,72 @@
+import { BuilderPatternLab } from "@/components/lab/builder-pattern/BuilderPatternLab";
+
+# Builder Pattern
+
+Builder exists for the awkward middle ground between “too few options to care” and “too many constructor arguments to survive.”
+
+When a class starts carrying a lot of mandatory and optional state, raw constructors become hard to read, hard to maintain, and easy to misuse. Builder moves the configuration burden into a fluent object that can collect values step by step and only create the final object once the state is complete.
+
+## The Core Problem
+
+Telescoping constructors try to cover every optional combination with overloads.
+
+That breaks down quickly:
+
+- **Readability collapses:** a long positional list makes it hard to remember what each argument means.
+- **Parameter drift becomes dangerous:** adjacent `String`, `int`, or `boolean` values can be swapped without the compiler helping you.
+- **Null padding spreads everywhere:** callers must pass placeholder values just to satisfy a constructor signature.
+
+The more optional knobs you have, the more the constructor API starts fighting the caller.
+
+## The Builder Idea
+
+Builder splits creation into two phases:
+
+1. **Collect configuration** in a separate builder object.
+2. **Validate and materialize** the final immutable object in `build()`.
+
+```text
+[Client] -> [Builder] -> [Built Object]
+```
+
+The target class usually keeps a private constructor that accepts the builder, so object creation can only happen through the controlled path.
+
+## Common Shape
+
+- The target class fields are usually `final`.
+- The builder mirrors those fields and stores optional defaults.
+- Fluent methods return `this`, which makes configuration read like a sentence.
+- `build()` becomes the checkpoint for validation and object creation.
+
+## Why It Helps
+
+- **Readable construction:** named builder calls explain intent better than positional argument lists.
+- **Safer configuration:** optional values become explicit and order-independent.
+- **Immutable output:** the final object can be frozen after `build()`, which makes it easier to reason about and safer to share.
+
+## Interview Reality Check
+
+Builder is especially useful when:
+
+- a class has many optional fields,
+- several fields are logically related,
+- the object should be immutable after creation,
+- or validation should happen once, at the boundary before allocation.
+
+It is overkill for simple objects with one or two arguments. In those cases, a constructor is usually cleaner.
+
+## Lesson Flow
+
+### 1. Refactor the Constructor Ladder
+
+Replace a `NotificationConfig` class full of overloaded constructors with one private constructor and a static inner `Builder`.
+
+### 2. Validate Before Allocation
+
+Use `build()` as the invariant checkpoint for an `HttpRequestBuilder`, rejecting invalid chains before the request object is created.
+
+### 3. Make the Result Immutable
+
+Turn `UserProfile` into a sealed object with final fields and no public setter surface after build time.
+
+<BuilderPatternLab lessonId="/lld/builder-pattern/overview" />

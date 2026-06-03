@@ -28,6 +28,8 @@ type LabConfig = {
 };
 
 type LabId =
+  | "identity"
+  | "shared-state"
   | "shallow-copy"
   | "singleton"
   | "vtable"
@@ -54,77 +56,194 @@ const fail = (
 const contains = (code: string, pattern: RegExp) => pattern.test(code);
 
 const labs: Record<LabId, LabConfig> = {
+  identity: {
+    title: "Object Identity Inspector",
+    subtitle: "Exercise 1.1: Identity vs. Equality",
+    goal: "Keep each object as its own instance and distinguish reference identity from same-value equality.",
+    defaultCode: `class UserProfile {
+  String name;
+  int loginCount;
+
+  UserProfile(String name) {
+    this.name = name;
+    this.loginCount = 0;
+  }
+}
+
+UserProfile a = new UserProfile("Ava");
+UserProfile b = a;
+UserProfile c = new UserProfile("Ava");
+
+boolean sameReference = a == b;
+boolean sameValue = a.equals(c);`,
+    idleMemory: [
+      { address: "stack:a", label: "Reference a", value: "UserProfile -> 0x011A" },
+      { address: "stack:b", label: "Reference b", value: "alias of a", tone: "warn" },
+      { address: "stack:c", label: "Reference c", value: "uninspected" },
+    ],
+    run: (code) => {
+      const usesSeparateObjects = (code.match(/new\s+UserProfile\s*\(/g) || []).length >= 2;
+      const avoidsAlias = !contains(code, /UserProfile\s+b\s*=\s*a\s*;/);
+      const comparesIdentity = contains(code, /==/);
+      const comparesValue = contains(code, /\.equals\s*\(/);
+
+      if (usesSeparateObjects && avoidsAlias && comparesIdentity && comparesValue) {
+        return pass(
+          "Identity and equality are separated",
+          "Each object keeps its own heap address while value comparison stays explicit.",
+          [
+            "Allocated UserProfile a at 0x011A.",
+            "Allocated UserProfile c at 0x01C7 instead of aliasing a.",
+            "Reference equality and value equality are now checked as different concepts.",
+            "Mutating a no longer silently mutates c through a shared reference.",
+          ],
+          [
+            { address: "stack:a", label: "Reference a", value: "0x011A", tone: "good" },
+            { address: "stack:b", label: "Reference b", value: "separate instance", tone: "good" },
+            { address: "stack:c", label: "Reference c", value: "0x01C7", tone: "good" },
+          ],
+        );
+      }
+
+      return fail(
+        "Object identity is still blurred",
+        "The engine still sees one variable aliasing another or the code never distinguishes identity from value.",
+        [
+          "b still points at the same object as a.",
+          "Same-value objects are not the same heap address.",
+          "Use a separate allocation and compare identity and equality intentionally.",
+        ],
+        [
+          { address: "stack:a", label: "Reference a", value: "0x011A", tone: "bad" },
+          { address: "stack:b", label: "Reference b", value: "alias of a", tone: "bad" },
+          { address: "stack:c", label: "Reference c", value: "needs separate allocation", tone: "bad" },
+        ],
+      );
+    },
+  },
+  "shared-state": {
+    title: "Instance State Boundary",
+    subtitle: "Exercise 1.2: State Lives With the Object",
+    goal: "Move mutable data off the class itself so every instance owns its own state.",
+    defaultCode: `class SessionCart {
+  static int itemCount = 0;
+  String owner;
+
+  SessionCart(String owner) {
+    this.owner = owner;
+  }
+
+  void addItem() {
+    itemCount++;
+  }
+}
+
+SessionCart alice = new SessionCart("Alice");
+SessionCart bob = new SessionCart("Bob");
+alice.addItem();
+bob.addItem();`,
+    idleMemory: [
+      { address: "class", label: "Mutable field", value: "static itemCount", tone: "warn" },
+      { address: "alice", label: "Alice cart", value: "shared counter" },
+      { address: "bob", label: "Bob cart", value: "shared counter" },
+    ],
+    run: (code) => {
+      const hasStaticCounter = contains(code, /static\s+int\s+itemCount/);
+      const ownsCounter = contains(code, /(private|protected|public)?\s*int\s+itemCount\s*;/) && !hasStaticCounter;
+      const usesInstanceAdd = contains(code, /itemCount\s*\+\+/);
+      const createsTwoCarts = (code.match(/new\s+SessionCart\s*\(/g) || []).length >= 2;
+
+      if (!hasStaticCounter && ownsCounter && usesInstanceAdd && createsTwoCarts) {
+        return pass(
+          "State now belongs to each object",
+          "Each cart keeps its own counter, so Alice and Bob can mutate independently.",
+          [
+            "Removed class-level shared counter.",
+            "Allocated one counter per SessionCart instance.",
+            "alice.addItem() no longer leaks into bob's state.",
+            "The object boundary now matches the business boundary.",
+          ],
+          [
+            { address: "alice", label: "Alice cart", value: "itemCount=1", tone: "good" },
+            { address: "bob", label: "Bob cart", value: "itemCount=1", tone: "good" },
+            { address: "class", label: "Shared state", value: "removed", tone: "good" },
+          ],
+        );
+      }
+
+      return fail(
+        "Mutable state is still shared",
+        "The class still owns the counter, so every instance mutates the same memory slot.",
+        [
+          "A static mutable field makes every object share one counter.",
+          "One user's action will change another user's view of the world.",
+          "Move the counter into the instance and keep class-level data immutable.",
+        ],
+        [
+          { address: "class", label: "Mutable field", value: hasStaticCounter ? "static itemCount" : "needs instance field", tone: "bad" },
+          { address: "alice", label: "Alice cart", value: "shared counter", tone: "bad" },
+          { address: "bob", label: "Bob cart", value: "shared counter", tone: "bad" },
+        ],
+      );
+    },
+  },
   "shallow-copy": {
     title: "Memory Layout & Reference Inspector",
-    subtitle: "Exercise 1.1: Shallow Copy Mutation",
-    goal: "Replace aliasing with a copy constructor that allocates independent nested Cast storage.",
-    defaultCode: `class Cast {
-  String[] members;
-
-  Cast(String[] members) {
-    this.members = members;
-  }
-}
-
-class Movie {
+    subtitle: "Exercise 2.1: Copy Constructor Basics",
+    goal: "Replace aliasing with a copy constructor so the new object gets its own identity.",
+    defaultCode: `class Movie {
   String title;
-  Cast cast;
 
-  Movie(String title, Cast cast) {
+  Movie(String title) {
     this.title = title;
-    this.cast = cast;
+  }
+
+  Movie(Movie other) {
+    this.title = other.title;
   }
 }
 
-Movie originalMovie = new Movie(
-  "Heat",
-  new Cast(new String[] {"Neil", "Vincent"})
-);
-
+Movie originalMovie = new Movie("Heat");
 Movie copyMovie = originalMovie;
-copyMovie.cast.members[0] = "Corrupted";`,
+copyMovie.title = "Copy";`,
     idleMemory: [
       { address: "0x004FFA0", label: "originalMovie", value: "Movie -> 0x004FFA0" },
-      { address: "0x004FFA0+8", label: "cast_ptr", value: "0x008BB20", tone: "warn" },
+      { address: "0x004FFA0+8", label: "title_ptr", value: "\"Heat\"", tone: "warn" },
       { address: "0x004FFC0", label: "copyMovie", value: "uninspected" },
     ],
     run: (code) => {
       const hasCopyConstructor = contains(code, /Movie\s*\(\s*Movie\s+\w+\s*\)/);
-      const allocatesCast = contains(code, /new\s+Cast\s*\(/);
-      const clonesArray = contains(code, /(clone\s*\(\s*\)|Arrays\.copyOf|new\s+String\s*\[)/);
+      const separateAllocation = (code.match(/new\s+Movie\s*\(/g) || []).length >= 2;
       const stillAliases = contains(code, /copyMovie\s*=\s*originalMovie\s*;/);
 
-      if (hasCopyConstructor && allocatesCast && clonesArray && !stillAliases) {
+      if (hasCopyConstructor && separateAllocation && !stillAliases) {
         return pass(
-          "Deep copy boundary established",
-          "The copied Movie receives a fresh object address and a fresh nested Cast/member array address.",
+          "Copy constructor creates a separate object",
+          "The copied Movie receives its own heap address instead of sharing the original reference.",
           [
             "Allocated originalMovie at 0x004FFA0.",
-            "Copied scalar title value into 0x004FFC0.",
-            "Allocated new Cast at 0x008BC90 instead of reusing 0x008BB20.",
+            "Allocated copyMovie at 0x004FFC0.",
+            "Title copied through the constructor instead of through aliasing.",
             "Mutation routed to copyMovie only; originalMovie remains stable.",
           ],
           [
             { address: "0x004FFA0", label: "originalMovie.title", value: "\"Heat\"", tone: "good" },
-            { address: "0x008BB20", label: "originalMovie.cast.members[0]", value: "\"Neil\"", tone: "good" },
-            { address: "0x004FFC0", label: "copyMovie.title", value: "\"Heat\"", tone: "good" },
-            { address: "0x008BC90", label: "copyMovie.cast.members[0]", value: "\"Corrupted\"", tone: "good" },
+            { address: "0x004FFC0", label: "copyMovie.title", value: "\"Copy\"", tone: "good" },
+            { address: "0x004FFC0+8", label: "copyMovie.source", value: "Movie(Movie other)", tone: "good" },
           ],
         );
       }
 
       return fail(
         "Shared reference mutation detected",
-        "The engine still sees originalMovie and copyMovie pointing at the same nested Cast segment.",
+        "The engine still sees originalMovie and copyMovie pointing at the same object.",
         [
           "copyMovie resolves to the same Movie address as originalMovie.",
-          "cast_ptr is copied as an address, not as an owned object.",
-          "Writing copyMovie.cast.members[0] mutates the array visible through originalMovie.",
-          "Add Movie(Movie other) and duplicate the nested Cast/member array.",
+          "Add Movie(Movie other) and allocate a new Movie from it.",
+          "Copy the field values, not the reference itself.",
         ],
         [
           { address: "0x004FFA0", label: "originalMovie", value: "Movie", tone: "bad" },
-          { address: "0x008BB20", label: "shared Cast.members[0]", value: "\"Corrupted\"", tone: "bad" },
           { address: "0x004FFA0", label: "copyMovie", value: "alias of originalMovie", tone: "bad" },
         ],
       );
@@ -132,12 +251,12 @@ copyMovie.cast.members[0] = "Corrupted";`,
   },
   singleton: {
     title: "Concurrent Allocation Guard",
-    subtitle: "Exercise 1.2: Constructing the Singleton Guard",
-    goal: "Prevent raw construction and make concurrent getInstance calls converge on one address.",
+    subtitle: "Exercise 2.2: Singleton Basics",
+    goal: "Hide raw construction and make every call return the same shared instance.",
     defaultCode: `class ConfigRegistry {
   private static ConfigRegistry instance;
 
-  public ConfigRegistry() {
+  private ConfigRegistry() {
   }
 
   public static ConfigRegistry getInstance() {
@@ -154,41 +273,37 @@ copyMovie.cast.members[0] = "Corrupted";`,
     ],
     run: (code) => {
       const privateCtor = contains(code, /private\s+ConfigRegistry\s*\(/);
-      const volatileInstance = contains(code, /private\s+static\s+volatile\s+ConfigRegistry\s+instance/);
-      const synchronizedBlock = contains(code, /synchronized\s*\(\s*ConfigRegistry\.class\s*\)/);
-      const doubleCheck = (code.match(/instance\s*==\s*null/g) || []).length >= 2;
+      const staticInstance = contains(code, /private\s+static\s+ConfigRegistry\s+instance/);
+      const hasGetInstance = contains(code, /public\s+static\s+ConfigRegistry\s+getInstance\s*\(/);
+      const returnsInstance = contains(code, /return\s+instance\s*;/);
 
-      if (privateCtor && volatileInstance && synchronizedBlock && doubleCheck) {
+      if (privateCtor && staticInstance && hasGetInstance && returnsInstance) {
         return pass(
-          "Singleton guard is thread-safe",
-          "Both simulated threads observe the same post-lock address and raw constructor access is blocked.",
+          "Singleton access is centralized",
+          "The class can only be created from inside itself, and every caller receives the same instance.",
           [
             "Constructor visibility changed to private.",
-            "Thread 1 enters the class lock and allocates 0x00A11CE.",
-            "Thread 2 rechecks instance after lock acquisition.",
-            "Thread 2 returns 0x00A11CE instead of allocating a second object.",
+            "getInstance() allocates once and reuses the same reference.",
+            "External code can no longer call new ConfigRegistry().",
           ],
           [
             { address: "0x00A11CE", label: "ConfigRegistry.instance", value: "shared singleton", tone: "good" },
-            { address: "T1.ret", label: "Thread 1 return", value: "0x00A11CE", tone: "good" },
-            { address: "T2.ret", label: "Thread 2 return", value: "0x00A11CE", tone: "good" },
+            { address: "call", label: "getInstance()", value: "returns shared reference", tone: "good" },
           ],
         );
       }
 
       return fail(
-        "Race window remains open",
-        "The simulated scheduler can still interleave two null checks and produce multiple heap objects.",
+        "Construction is still exposed",
+        "The engine still sees a public constructor or an incomplete getInstance flow.",
         [
-          "Thread 1 checks instance == null.",
-          "Context switches before assignment becomes safely visible.",
-          "Thread 2 also sees null and allocates another object.",
-          "Use private constructor, volatile static field, and double-checked locking.",
+          "Hide the constructor behind private visibility.",
+          "Keep a static instance field.",
+          "Return the same instance from getInstance().",
         ],
         [
-          { address: "0x00A11CE", label: "Thread 1 allocation", value: "ConfigRegistry", tone: "bad" },
-          { address: "0x00BEEF0", label: "Thread 2 allocation", value: "ConfigRegistry", tone: "bad" },
           { address: "ctor", label: "Raw new ConfigRegistry()", value: "allowed", tone: "bad" },
+          { address: "instance", label: "Static instance", value: "missing or incomplete", tone: "bad" },
         ],
       );
     },
@@ -573,6 +688,10 @@ export function OopEngineLab({ lab, lessonId }: OopEngineLabProps) {
         <div>
           <div className="text-[11px] uppercase tracking-widest text-amber-500/80">{config.title}</div>
           <h3 className="m-0 mt-1 border-0 p-0 text-base font-semibold text-zinc-100">{config.subtitle}</h3>
+          <p className="m-0 mt-1 text-[11px] leading-5 text-zinc-500">
+            Pattern-based checker only — it inspects code shape and state flow, but it does not
+            compile Java.
+          </p>
         </div>
         <button
           type="button"
