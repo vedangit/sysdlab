@@ -5,6 +5,10 @@ import { createClient, type Session, type SupabaseClient } from "@supabase/supab
 import { getAuthRedirectUrl } from "@/lib/auth-redirect";
 import { capturePostHog, identifyPostHog, resetPostHog } from "@/lib/posthog";
 
+declare global {
+  var __sysdlabSupabaseClient: SupabaseClient | undefined;
+}
+
 type SupabaseAuthContextValue = {
   client: SupabaseClient | null;
   session: Session | null;
@@ -28,18 +32,25 @@ const SupabaseAuthContext = createContext<SupabaseAuthContextValue>({
 });
 
 function buildClient() {
+  if (globalThis.__sysdlabSupabaseClient) {
+    return globalThis.__sysdlabSupabaseClient;
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) return null;
 
-  return createClient(url, key, {
+  const client = createClient(url, key, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
     },
   });
+
+  globalThis.__sysdlabSupabaseClient = client;
+  return client;
 }
 
 export function SupabaseAuthProvider({ children }: { children: React.ReactNode }) {

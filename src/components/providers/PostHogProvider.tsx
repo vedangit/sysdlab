@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useSupabaseAuth } from "@/components/providers/SupabaseAuthProvider";
 import {
   capturePostHog,
@@ -13,7 +13,6 @@ import {
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { session, isReady } = useSupabaseAuth();
   const previousUserIdRef = useRef<string | null | undefined>(undefined);
   const userId = session?.user?.id ?? null;
@@ -33,10 +32,10 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     if (!isPostHogConfigured() || typeof window === "undefined" || !pathname) return;
     capturePostHog("$pageview", {
       path: pathname,
-      search: searchParams.toString(),
+      search: window.location.search.replace(/^\?/, ""),
       current_url: window.location.href,
     });
-  }, [pathname, searchParams]);
+  }, [pathname]);
 
   useEffect(() => {
     if (!isReady || !isPostHogConfigured()) return;
